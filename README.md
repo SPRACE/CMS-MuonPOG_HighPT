@@ -3,14 +3,12 @@
             ID Efficiencies of Very High Pt Muons
 ____________________________________________________________________
 
-This is a Guidance to help running the Tag & Probe code to compute
+This is a fast tutorial to help running the Tag & Probe code to compute
 efficiencies of very high pt muons, out of Z peak, but with counting
 numbers instead of a fitting around Z ressonace.
 
-
 To get the repository of this task, type:
    git clone https://github.com/SPRACE/CMS-MuonPOG_HighPT.git
-
 
 There are different directories for different tasks:
 (1) Setting up the Tag & Probe working area: production of trees
