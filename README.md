@@ -12,6 +12,7 @@ To get the repository of this task, type:
 
    git clone https://github.com/SPRACE/CMS-MuonPOG_HighPT.git
 
+
 There are different directories for different tasks:
 
 (1) Setting up the Tag & Probe working area: production of trees
@@ -43,4 +44,4 @@ There are different directories for different tasks:
         CMS-MuonPOG_HighPT/Compute_Efficiencies/
 
 Go into each directory, starting from (1), and follow their instructions.
-
+There are "How-To.txt" files in each one of the above directories.
