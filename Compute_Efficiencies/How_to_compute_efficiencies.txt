@@ -1,0 +1,69 @@
+####################################################################
+
+        Computing ID Efficiencies for Very High Pt Muons
+____________________________________________________________________
+
+Some of the (a) ROOT macro files are used to compute plots of efficiency
+for different Data and MC samples. As soon as individual ROOT files
+with plots of efficiencies are created for each sample (based on the
+counting method from Tag & Probe muons), those files can be added (b)
+later on as new input files.
+
+____________________________________________________________________
+(a.1) To compute efficiencies individually for each Data and MC sample,
+first copy these files into a same directory of your ACCESS account:
+   ### macro file to compute Data and MC efficiencies via CONDOR
+   * Compute_Efficiencies/ComputeEfficiencies_via_Condor_v2.py
+   ### macro file to compute efficiencies for Data
+   * Compute_Efficiencies/CountEffHighMassDimuon_DATA_v5.py
+   ### macro file to compute efficiencies for MC samples
+   * Compute_Efficiencies/CountEffHighMassDimuon_MC_v5.py
+
+Open file "ComputeEfficiencies_via_Condor_v2.py" and provide the list
+of Data and MC input ROOT files accordingly. Then just type:
+
+   python ComputeEfficiencies_via_Condor_v2.py
+
+and follow its instructions. Several jobs will be submitted via CONDOR.
+Each jobs corresponds to a computation of efficiencies of an input file.
+Output files, containing efficiencies from each sample, will be sent
+to your ACCESS account.
+
+____________________________________________________________________
+(a.2) When all jobs finished, join all ROOT files with individual
+efficiencies. To do that, copy this file to you ACCESS:
+   * Compute_Efficiencies/Gather_information_from_Results_v2.py
+
+Type:
+
+   python Gather_information_from_Results_v2.py
+
+and follow its instructions. All ROOT files will be gathered in only
+one place (each file corresponding to a Data or MC sample)..
+
+____________________________________________________________________
+(b) To get final efficiencies, you will need these two macro files:
+   ### config file where User applies all needed settings
+   * Compute_Efficiencies/SettingUP_EfficiencyPlots.h
+   ### main macro file to compute final efficiencies
+   * Compute_Efficiencies/plotMuonID_MC_DATA_efficiencies_v10.cpp
+
+Macro "plotMuonID_MC_DATA_efficiencies_v10.cpp" will call the config
+file "SettingUP_EfficiencyPlots.h" as an include. You need to setup
+only the later. Then type:
+
+   root -b -l -q plotMuonID_MC_DATA_efficiencies_v10.cpp
+
+It will compute efficiencies for the following cases:
+   * Data    (apparent efficiency)
+   * Data    (final efficiency)
+   * All MC  (apparent efficiency)
+   * DY MC   (efficiency from signal)
+   * DY+Jets (control plot of efficiency)
+
+In case of MC (DY MC and All MC), for each bin, it is computed the
+final efficiency from the sum of all MC efficiency weighted by its
+own weight:
+   Eff = (W1*effMC1 + W2*effMC2 + ... + Wn*effMCn) / (W1 + W2 + ... + Wn)
+Such weights are give by:
+   Wn = (number of entries in that bin of sample n) x (MC weight from cross sections and luminosity)

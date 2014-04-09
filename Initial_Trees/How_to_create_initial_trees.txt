@@ -1,0 +1,84 @@
+####################################################################
+
+                    Creating Initial Trees
+____________________________________________________________________
+
+### You should login into lxplus5. Then setup the work area:
+    cmsrel CMSSW_5_3_10
+    cd CMSSW_5_3_10/src
+    cmsenv
+    cvs co -r V04-04-13 PhysicsTools/TagAndProbe
+    cvs co -r V02-03-01 MuonAnalysis/MuonAssociators
+    cvs co -r V08-05-01 MuonAnalysis/TagAndProbe
+
+### Create producers:
+    cd CMSSW_5_3_10/src/MuonAnalysis/
+    ### Producer for Missing ET
+    mkedprod METProducer
+    ### Producer to create variable related to cosmic-rays
+    mkedprod VetoCosmicMuonsProducer
+    ### Producer to create variables related to the dimuon vertex fit
+    mkedprod DimuonVtxProducer
+    ### Producer for variables in generated level
+    mkedprod GenPVariablesProducer
+    ### Producer to include variable from NewTuneP Muons
+    mkedprod NewTunePMuonsProducer
+
+### Copy files:
+    cd -
+    cp METProducer/BuildFile.xml CMSSW_5_3_10/src/MuonAnalysis/METProducer/BuildFile.xml
+    cp METProducer/METProducer.cc CMSSW_5_3_10/src/MuonAnalysis/METProducer/src/METProducer.cc
+    cp DimuonVtxProducer/BuildFile.xml CMSSW_5_3_10/src/MuonAnalysis/DimuonVtxProducer/BuildFile.xml
+    cp DimuonVtxProducer/DimuonVtxProducer.cc CMSSW_5_3_10/src/MuonAnalysis/DimuonVtxProducer/src/DimuonVtxProducer.cc
+    cp VetoCosmicMuonsProducer/BuildFile.xml CMSSW_5_3_10/src/MuonAnalysis/VetoCosmicMuonsProducer/BuildFile.xml
+    cp VetoCosmicMuonsProducer/VetoCosmicMuonsProducer.cc  CMSSW_5_3_10/src/MuonAnalysis/VetoCosmicMuonsProducer/src/VetoCosmicMuonsProducer.cc
+    cp GenPVariablesProducer/BuildFile.xml CMSSW_5_3_10/src/MuonAnalysis/GenPVariablesProducer/BuildFile.xml
+    cp GenPVariablesProducer/GenPVariablesProducer.cc CMSSW_5_3_10/src/MuonAnalysis/GenPVariablesProducer/src/GenPVariablesProducer.cc
+    cp NewTunePMuonsProducer/BuildFile.xml CMSSW_5_3_10/src/MuonAnalysis/NewTunePMuonsProducer/BuildFile.xml
+    cp NewTunePMuonsProducer/src/NewTunePMuonsProducer.cc CMSSW_5_3_10/src/MuonAnalysis/NewTunePMuonsProducer/src/NewTunePMuonsProducer.cc
+
+### Copy config files to produce trees:
+    cp ConfigFiles/common_modules_cff.py CMSSW_5_3_10/src/MuonAnalysis/TagAndProbe/python/common_modules_cff.py
+    cp ConfigFiles/common_variables_cff.py CMSSW_5_3_10/src/MuonAnalysis/TagAndProbe/python/common_variables_cff.py
+    cp ConfigFiles/tp_from_aod_Data.py CMSSW_5_3_10/src/MuonAnalysis/TagAndProbe/test/zmumu/tp_from_aod_Data.py
+    cp ConfigFiles/tp_from_aod_MC.py CMSSW_5_3_10/src/MuonAnalysis/TagAndProbe/test/zmumu/tp_from_aod_MC.py
+
+### Copy config file for CRAB (DON'T FORGET TO SETUP THIS CRAB FILES PROPERLY)
+    cp CRAB/crab_DATA.cfg CMSSW_5_3_10/src/MuonAnalysis/TagAndProbe/test/zmumu/crab_DATA.cfg
+    cp CRAB/crab_MC.cfg CMSSW_5_3_10/src/MuonAnalysis/TagAndProbe/test/zmumu/crab_MC.cfg
+
+### Now compile and build the files:
+    cd CMSSW_5_3_10/src/
+    scram b
+
+### You should be able to produce the trees locally
+    cd MuonAnalysis/TagAndProbe/test/zmumu/
+    cmsRun tp_from_aod_Data.py
+    cmsRun tp_from_aod_MC.py
+### or via CRAB
+    crab -create -cfg crab_DATA.cfg
+    crab -submit -c <crab directory>    
+### For further help, see more instructions in:
+    https://www.sprace.org.br/twiki/bin/view/Main/AngeloStudiesVeryHighPtMuons#Submitting_Jobs_to_CRAB
+
+### Here is the list of data sets used so far in this task
+    /SingleMu/Run2012C-22Jan2013-v1/AOD
+    /DYToMuMu_M-20_CT10_TuneZ2star_8TeV-powheg-pythia6/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM
+    /DYToMuMu_M-120_CT10_TuneZ2star_8TeV-powheg-pythia6/Summer12_DR53X-PU_S10_START53_V7C1-v1/AODSIM
+    /DYToMuMu_M-200_CT10_TuneZ2star_8TeV-powheg-pythia6/Summer12_DR53X-PU_S10_START53_V7C1-v1/AODSIM
+    /DYToMuMu_M-500_CT10_TuneZ2star_8TeV-powheg-pythia6/Summer12_DR53X-PU_S10_START53_V7C1-v1/AODSIM
+    /DYToMuMu_M-800_CT10_TuneZ2star_8TeV-powheg-pythia6/Summer12_DR53X-PU_S10_START53_V7C1-v1/AODSIM
+    /DYToMuMu_M-1000_CT10_TuneZ2star_8TeV-powheg-pythia6/Summer12_DR53X-PU_S10_START53_V7C1-v1/AODSIM
+    /DYToMuMu_M-1500_CT10_TuneZ2star_8TeV-powheg-pythia6/Summer12_DR53X-PU_S10_START53_V7C1-v1/AODSIM
+    /DYToMuMu_M-2000_CT10_TuneZ2star_8TeV-powheg-pythia6/Summer12_DR53X-PU_S10_START53_V7C1-v1/AODSIM
+    /DYToTauTau_M-20_CT10_TuneZ2star_8TeV-powheg-pythia6/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM
+    /TT_CT10_TuneZ2star_8TeV-powheg-tauola/Summer12_DR53X-PU_S10_START53_V7A-v2/AODSIM
+    /T_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM
+    /Tbar_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM
+    /WW_TuneZ2star_8TeV_pythia6_tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM
+    /WZ_TuneZ2star_8TeV_pythia6_tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM
+    /ZZ_TuneZ2star_8TeV_pythia6_tauola/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM
+    /WJetsToLNu_TuneZ2Star_8TeV-madgraph-tarball/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM
+    /QCD_Pt_20_MuEnrichedPt_15_TuneZ2star_8TeV_pythia6/Summer12_DR53X-PU_S10_START53_V7A-v3/AODSIM
+    /DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph-tarball/Summer12_DR53X-PU_S10_START53_V7A-v1/AODSIM
+

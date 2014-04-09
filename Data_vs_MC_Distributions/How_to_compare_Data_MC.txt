@@ -1,0 +1,59 @@
+####################################################################
+
+          Comparison Between Data and MC Distributions
+____________________________________________________________________
+
+As soon as ROOT files are ready, it is possible to:
+   (a) create plots comparing Data and MC distributions;
+   (b) pop up on screen the number of entries per variable per sample
+       and per bin.
+
+The supposition of "ROOT files ready" means you have already gone
+through all previous steps:
+   * Initial_Trees/How_to_create_initial_trees.txt
+   * Check_Repeated_Files/How_to_check_repeated_ROOT_files.txt
+   * Merging_Files/How_to_merge_ROOT_files.txt
+   * Vertex_Reweighting/How_to_reweight_via_vertex_multiplicty.txt
+   * CleanUp_TnP_Pairs/How_to_choose_best_TnP_pairs.txt
+
+____________________________________________________________________
+(a) Since those ROOT files may be very big (order of GigaBytes), it is
+expected that you have placed such trees in the ACCESS or T2 STORAGE.
+If so, login into you ACCESS account and copy these files into a same
+directory:
+   ### config file with all needed settings
+   * Setting_Variables5.h
+   ### main macro file (which uses "Setting_Variables5.h" as an include)
+   * TagAndProbe_stacks_V14.cpp
+
+Both scripts are very well commented, but you will need to setup only
+(and ONLY) the file "Setting_Variables5.h". Configure it concerning
+your needs. You have to tell to the code where are located the input
+ROOT files, as well as output file name and format, MC scale factors,
+Y and X ranges and labels and titles, etc., etc., etc.
+
+Do everything inside "Setting_Variables5.h". There is no need to apply
+any modifications in "TagAndProbe_stacks_V14.cpp", unless you know what
+you are doing.
+
+Then just type:
+
+   root -b -l -q TagAndProbe_stacks_V14.cpp
+
+Some informations about running flow will be pop up on the screen, and
+plots will be created (for each analyzed variable) comparing Data and MC
+samples. It includes a Data/MC ratio, and pull too.
+
+____________________________________________________________________
+(b) Since there are several MC samples
+   * 8 of DY->mumu
+   * 9 of background
+it is necessary to summup individual efficiencies in a proper way in
+order to get the final MC efficiencies. One of the inputs to do it
+correctly is counting the number of entries per variable per sample
+per bin. It is accomplished going into "Setting_Variables5.h" and using
+the option:
+
+   output_entries_per_bin = 1
+
+Make sure to read the config file and apply appropriate input parameters.

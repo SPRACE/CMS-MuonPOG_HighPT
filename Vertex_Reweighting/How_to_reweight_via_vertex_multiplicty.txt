@@ -1,0 +1,30 @@
+####################################################################
+
+        How to Apply the Reweighting via Vertex Multiplicity
+____________________________________________________________________
+
+The MC samples have to be reweighted concerning the vertex
+multiplicity from Data events using the macro
+
+   MuonAnalysis/TagAndProbe/test/zmumu/addNVtxWeight.cxx
+
+The macro addNVtxWeight.cxx compares the vertex multiplicity
+distribution from Data with that one from a MC sample. After
+normalizing these distributions, differences from their shapes
+are taking into account to create a variable called weight inside
+the new MC ROOT file. This step has to be done for each MC sample.
+
+   cd CMSSW_5_3_10/src/MuonAnalysis/TagAndProbe/test/zmumu/
+
+and type the following command:
+
+   root  -b -l -q  <MC ROOT sample>  <Data ROOT sample>  addNVtxWeight.cxx+
+
+It will create a .png file showing distributions of vertex multiplicity
+of the Data and MC samples used, as well as the correspondent new MC ROOT
+file containing that additional variable weight. This variable carries the
+weights to be applied later on to the events of the corresponding MC sample.
+
+### Obs: macro "addNVtxWeight.cxx" has been created when User followed
+    the instructions on
+    CMS-MuonPOG_HighPT/Initial_Trees/How_to_create_initial_trees.txt

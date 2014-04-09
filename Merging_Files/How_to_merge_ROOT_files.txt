@@ -1,0 +1,43 @@
+####################################################################
+
+                     How to Merge ROOT Files
+____________________________________________________________________
+
+This tutorial helps on:
+   (a) how to merge ROOT files (which are expected to be in the T2 STORAGE);
+   (b) how to move the merged ROOT files to a path in the T2 STORAGE.
+
+____________________________________________________________________
+(a) First of all, login into your ACCESS account and then type:
+
+   source /home/assantos/scripts/create_list_of_StorageFiles.sh hadd /pnfs/sprace.org.br/data/cms/store/user/bla/bla/bla/
+
+where bla/bla/bla is the rest of the path where the ROOT files are
+placed in. Such command create a list of ROOT files called lll.txt.
+
+Then change the list name:
+
+     mv lll.txt file
+
+To merge the ROOT files in the list, run the command
+
+   source /home/assantos/scripts/haddScript.sh file
+
+Depending on the number of input files or on their size, this step
+may get stuck, needing to split the list "lll.txt" in two or more
+file lists. This is because we have not created a script to make it
+easier than this. User has to do it carefully and sample-by-sample.
+Take also care of using file names accordingly.
+
+____________________________________________________________________
+(b) As soon as files were merged, you may copy them to a path in the
+T2 STORAGE. Just type:
+
+   python /home/assantos/scripts/copy_from_ACCESS_to_T2_SPRACE.py
+
+and follow the script instructions.
+
+CAUTION: scripts mentioned above are located in Angelo Santos' /home/
+directory. In case you found any problem related to that, please, mail
+to "angelo.santos@cern.ch".
+

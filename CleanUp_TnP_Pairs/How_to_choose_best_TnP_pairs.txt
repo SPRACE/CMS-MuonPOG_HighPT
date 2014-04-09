@@ -1,0 +1,56 @@
+####################################################################
+
+       	Choosing Best Pairs of Tag & Probe Muons
+____________________________________________________________________
+
+In order to get a collection of selected T&P pairs, a macro file has
+been created to have a workflow to mark such pairs as "good" or "bad".
+In the end, a new ROOT file is produced containing a new variable
+called "pair_BestPair" carrying values "1" and "0" if the pairs were
+labeled as "good" or "bad", respectively.
+
+The clean up of T&P pairs is done only requiring pairs with the best
+Chi2/NDF, e.g., with the Chi2/NDF closest to 1.
+
+In this guide, you will find instruction to:
+   (a) generate the new trees with the workflow of cleaning up, and
+       will do that via CONDOR;
+   (b) gather ROOT files and informations received from CONDOR jobs.
+
+____________________________________________________________________
+(a) To select the best pairs of T&P muons, firstly copy these three
+scripts to your ACCESS account. Put them in a same directory:
+   ### macro file to run the workflow to select the best pairs
+   * addBestPair_RunEvent_v9.cxx
+   ### pytho script to submit jobs via CONDOR
+   * Cleaning_TPpairs_v4.py
+   ### script to gather ROOT files and informations from CONDOR jobs
+   * Gather_information_from_Results.py
+
+All of these scripts are well commented and you need only to follow
+its instructions:
+   * setup input parameters inside "Cleaning_TPpairs_v4.py"
+   * run script
+     	 python Cleaning_TPpairs_v4.py
+     and follow instructions
+
+Depends on your needs, its is also possible to setup this script to:
+   * create a variable called "pair_passBaselineSelections" to encompass
+     selected pairs from "pair_BestPair" and also from addition selections
+     pre-defined by the User;
+   * or create "pair_passBaselineSelections" with selections containing
+     only the addition cuts pre-defined by the User;
+   * or create only variable "pair_BestPair".
+
+____________________________________________________________________
+(b) When all jobs finished, run
+
+   python Gather_information_from_Results.py
+
+and follow its instructions.
+
+In case of needing to move the new ROOT files (with the additional
+variables) to the T2 STORAGE, follow instructions in item (b) of guide
+
+   CMS-MuonPOG_HighPT/Merging_Files/How_to_merge_ROOT_files.txt
+

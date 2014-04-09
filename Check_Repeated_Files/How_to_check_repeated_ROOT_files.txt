@@ -1,0 +1,24 @@
+####################################################################
+
+              Check Repeated ROOT files from CRAB
+____________________________________________________________________
+
+Sometimes we need to resubmit jobs, which may produce duplicated ROOT
+files. In order to check which files are duplicated (triplicated...),
+copy the script "Check_RepeatedFiles_v1.py" into your ACCESS account.
+Then type
+
+     python Check_RepeatedFiles_v1.py
+
+and follow instructions from the script. It will ask you to write the
+path containing the list of ROOT files received from CRAB (which are
+expected to be in the T2 STORAGE).
+
+As result, the script will pop up the list of duplicated ROOT files
+for each kind of ROOT sample. Your job is to remove the duplicated
+file. But make sure to delete that one of small size.
+
+CAUTION: this script uses other script located in Angelo Santos' /home/
+directory. In case you found any problem related to that, please, mail
+to "angelo.santos@cern.ch".
+
