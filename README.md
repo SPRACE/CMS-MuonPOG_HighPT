@@ -27,17 +27,18 @@ There are different directories for different tasks:
 
     	CMS-MuonPOG_HighPT/Merging_Files/
 
-(4) Correction through vertex multiplicity
-
-        CMS-MuonPOG_HighPT/Vertex_Reweighting/
-
-(5) Choose T&P pairs based on the best Chi2
+(4) Choose T&P pairs based on the best Chi2
 
         CMS-MuonPOG_HighPT/CleanUp_TnP_Pairs/
 
-(6) Cross checks comparing Data and MC distributions
+(5) Cross checks comparing Data and MC distributions
 
         CMS-MuonPOG_HighPT/Data_vs_MC_Distributions/
+
+(6) Correction through vertex multiplicity
+
+        CMS-MuonPOG_HighPT/Vertex_Reweighting/
+
 
 (7) Computing efficiencies
 

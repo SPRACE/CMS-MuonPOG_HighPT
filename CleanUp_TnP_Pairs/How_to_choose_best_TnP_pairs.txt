@@ -21,17 +21,17 @@ ____________________________________________________________________
 (a) To select the best pairs of T&P muons, firstly copy these three
 scripts to your ACCESS account. Put them in a same directory:
    ### macro file to run the workflow to select the best pairs
-   * addBestPair_RunEvent_v9.cxx
+   * addBestPair_RunEvent.cxx
    ### pytho script to submit jobs via CONDOR
-   * Cleaning_TPpairs_v4.py
+   * Cleaning_TPpairs.py
    ### script to gather ROOT files and informations from CONDOR jobs
    * Gather_information_from_Results.py
 
 All of these scripts are well commented and you need only to follow
 its instructions:
-   * setup input parameters inside "Cleaning_TPpairs_v4.py"
+   * setup input parameters inside "Cleaning_TPpairs.py"
    * run script
-     	 python Cleaning_TPpairs_v4.py
+     	 python Cleaning_TPpairs.py
      and follow instructions
 
 Depends on your needs, its is also possible to setup this script to:

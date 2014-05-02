@@ -17,7 +17,7 @@
             line) a possibility of either encompassing or not the User's pre-defined
             selections into variable "pair_passBaselineSelections".
           - Now, this macro has to be run in the way:
-              root -b -l -q 'addBestPair_RunEvent_v9.cxx("dataset_definition", "dataset_path", debug, create_new_root, choose_pair, create_selection_variable)'
+              root -b -l -q 'addBestPair_RunEvent.cxx("dataset_definition", "dataset_path", debug, create_new_root, choose_pair, create_selection_variable)'
             where:
               - dataset_definition: is a string defining the data set input file;
               - dataset_path: is the path to the input ROOT file;
@@ -74,7 +74,7 @@
     respectively.
 
     Run this macro in this way:
-          root -b -l -q 'addBestPair_RunEvent_v9.cxx("dataset_definition", "dataset_path", debug, create_new_root)'
+          root -b -l -q 'addBestPair_RunEvent.cxx("dataset_definition", "dataset_path", debug, create_new_root)'
     where:
           - dataset_definition: is a string defining the data set input file;
           - dataset_path: is the path to the input ROOT file;
@@ -135,10 +135,10 @@ using namespace std;
 #define NUMBER_OF_ARRAYS 100 // This number may be lower but need caution when decreasing it
 
 // =================================================================================================
-void addBestPair_RunEvent_v9 () {
+void addBestPair_RunEvent () {
   cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
   cout << "\t ERROR: the correct way to use this macro is" << endl;
-  cout << "\t\t root -b -l -q \'addBestPair_RunEvent_v9.cxx(\"dataset_definition\", \"dataset_path\", \
+  cout << "\t\t root -b -l -q \'addBestPair_RunEvent.cxx(\"dataset_definition\", \"dataset_path\", \
 debug, create_new_root, choose_pair, create_selection_variable)\'" << endl;
   cout << "\t where" << endl;
   cout << "\t - dataset_definition: is a string defining the data set of the input file;" << endl;
@@ -157,7 +157,7 @@ encompassing User's pre-defined selections.\n\n" << endl;
 //                                       Main function starts here.
 //
 // =================================================================================================
-void addBestPair_RunEvent_v9 ( string dataset_definition == "", const char* file_path == "",
+void addBestPair_RunEvent ( string dataset_definition == "", const char* file_path == "",
 			       Int_t let_debug == 0, Int_t let_create_new_root_file == 0,
 			       Int_t let_choose_pair == 1, Int_t let_create_selection_variable == 1 ) {
 
@@ -187,29 +187,29 @@ void addBestPair_RunEvent_v9 ( string dataset_definition == "", const char* file
        ) {
     cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
     cout << "\t ERROR: wrong value passed to input variables.\n";
-    addBestPair_RunEvent_v9 ();
+    addBestPair_RunEvent ();
   }
   if ( (typeid(file_path) != typeid(char*)) || (file_path == "") ) {
     cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
-    cout << "\t ERROR: in macro addBestPair_RunEvent_v9 ():" << endl;
+    cout << "\t ERROR: in macro addBestPair_RunEvent ():" << endl;
     cout << "\t Maybe has passed wrong input type (or even no input) into variable \"file_path\"." << endl;
-    addBestPair_RunEvent_v9 ();
+    addBestPair_RunEvent ();
     gSystem->Exit(0);
   }
   if ( (typeid(dataset_definition) != typeid(string)) || (dataset_definition == "") ) {
   cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
-    cout << "\t ERROR: in macro addBestPair_RunEvent_v9 ():" << endl;
+    cout << "\t ERROR: in macro addBestPair_RunEvent ():" << endl;
     cout << "\t Maybe has passed wrong input type (or even no input) into variable \"dataset_definition\"." << endl;
-    addBestPair_RunEvent_v9 ();
+    addBestPair_RunEvent ();
     gSystem->Exit(0);
   }
 
   TFile *fIn = TFile::Open( file_path );
   if( !fIn ){
     cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
-    cout << "\t ERROR: in macro addBestPair_RunEvent_v9 ():" << endl;
+    cout << "\t ERROR: in macro addBestPair_RunEvent ():" << endl;
     cout << "\t Input ROOT file \"" << file_path << "\" not found. Check the dataset path." << endl;
-    addBestPair_RunEvent_v9 ();
+    addBestPair_RunEvent ();
     gSystem->Exit(0);
   }
   TTree *tIn  = (TTree *)fIn->Get("tpTree/fitter_tree");

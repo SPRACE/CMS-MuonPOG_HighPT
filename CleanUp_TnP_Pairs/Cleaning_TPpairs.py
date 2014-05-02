@@ -105,7 +105,7 @@ debug              = 1
 new_folder         = 0
 choose_pair        = 0
 select_events      = 1
-ROOT_macro_file    = "addBestPair_RunEvent_v9.cxx"
+ROOT_macro_file    = "addBestPair_RunEvent.cxx"
 TP_pair_selections = "(charge != tag_charge) && (NewTuneP_eta > -2.4) && (NewTuneP_eta < 2.4) && (tag_NewTuneP_eta > -2.1) && (tag_NewTuneP_eta < 2.1) && (tag_IsoMu24 == 1) && (pair_newTuneP_mass > 20.) && (pair_DimuonVtxFitNormQui2 < 10.) && (tag_NewTuneP_pt > 45.) && (NewTuneP_pt > 45.) && (pair_dz > -0.2) && (pair_dz < 0.2) && (tag_combRelIsoPF04dBeta < 0.12) && (tag_innertrackPtRelError < 0.1) && (pair_collinearity1 < cosmics) && ((tkIso/NewTuneP_pt) < 0.1)"
 
 

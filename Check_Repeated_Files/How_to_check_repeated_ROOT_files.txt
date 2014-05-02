@@ -5,10 +5,10 @@ ____________________________________________________________________
 
 Sometimes we need to resubmit jobs, which may produce duplicated ROOT
 files. In order to check which files are duplicated (triplicated...),
-copy the script "Check_RepeatedFiles_v1.py" into your ACCESS account.
+copy the script "Check_RepeatedFiles.py" into your ACCESS account.
 Then type
 
-     python Check_RepeatedFiles_v1.py
+     python Check_RepeatedFiles.py
 
 and follow instructions from the script. It will ask you to write the
 path containing the list of ROOT files received from CRAB (which are

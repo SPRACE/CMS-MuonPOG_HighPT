@@ -1,5 +1,5 @@
 /******************************************************************
-  MACRO FILE: plotMuonID_MC_DATA_efficiencies_v10.cpp
+  MACRO FILE: plotMuonID_MC_DATA_efficiencies.cpp
 
   This is ROOT macro file used to compute plots of efficiency
   for different Data and MC samples. As soon as separated ROOT
@@ -67,7 +67,7 @@ void get_entries_per_bin ( vector <string>, Int_t, Int_t, Int_t, long & );
 
 
 // This is the main function
-void plotMuonID_MC_DATA_efficiencies_v10 () {
+void plotMuonID_MC_DATA_efficiencies () {
 
   vector <TFile*> files;
   vector <TCanvas*> canvas;

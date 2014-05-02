@@ -5,8 +5,8 @@ import stat
 import shutil
 import sys
 
-PYTHON_macro_file_Data = "CountEffHighMassDimuon_DATA_v5.py"
-PYTHON_macro_file_MC   = "CountEffHighMassDimuon_MC_v5.py"
+PYTHON_macro_file_Data = "CountEffHighMassDimuon_DATA.py"
+PYTHON_macro_file_MC   = "CountEffHighMassDimuon_MC.py"
 
 #root_files = [
 #    ("Data", "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_Data_RunC__Mass_mu1_mu2__gt_0_GeV.root"),
@@ -252,8 +252,8 @@ def write_root_file ( dataset_path, macro_file_name ):
 # Here an output folder is created to where all results will arrive from CONDOR.
 #
 # In CONDOR, the macro file will run is this way:
-#          python  CountEffHighMassDimuon_DATA_v5.py
-#          python  CountEffHighMassDimuon_MC_v5.py
+#          python  CountEffHighMassDimuon_DATA.py
+#          python  CountEffHighMassDimuon_MC.py
 #
 #######################################################################################
 def main():

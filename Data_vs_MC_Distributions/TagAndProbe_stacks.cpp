@@ -74,7 +74,7 @@
 #include "TLegend.h"
 #include "TSystem.h"
 
-#include "Setting_Variables5.h"
+#include "Setting_Variables.h"
 
 using namespace std;
 
@@ -116,7 +116,7 @@ void ratios ( vector <string>, vector <TH1F*>, Int_t, Int_t, TH1F* &, vector <st
 //                   Here starts the main function                          //
 //                                                                          //
 //////////////////////////////////////////////////////////////////////////////
-void TagAndProbe_stacks_V14 () {
+void TagAndProbe_stacks () {
 
   //////////////////////////////////////////////////////////////////////////////
   //                                                                          //
@@ -447,7 +447,7 @@ void TagAndProbe_stacks_V14 () {
   cout << "*" << endl;
   cout << "**************************************************************************" << endl;
   cout << "**************************************************************************" << endl;
-} // End of the main function "void TagAndProbe_stacks_V13()".
+} // End of the main function "void TagAndProbe_stacks ()".
 
 
 //////////////////////////////////////////////////////////////////////////////

@@ -3,7 +3,7 @@
   MACRO FILE: SettingUP_EfficiencyPlots.h
 
   This is a config file used as an include into macro file
-    plotMuonID_MC_DATA_efficiencies_v10.cpp
+    plotMuonID_MC_DATA_efficiencies.cpp
   and should contain all User's setup and functions to
   properly create plots of efficiency from counting method
   of Tag & Probe.

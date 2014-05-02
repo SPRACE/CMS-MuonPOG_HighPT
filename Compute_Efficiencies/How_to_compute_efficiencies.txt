@@ -13,16 +13,16 @@ ____________________________________________________________________
 (a.1) To compute efficiencies individually for each Data and MC sample,
 first copy these files into a same directory of your ACCESS account:
    ### macro file to compute Data and MC efficiencies via CONDOR
-   * Compute_Efficiencies/ComputeEfficiencies_via_Condor_v2.py
+   * Compute_Efficiencies/ComputeEfficiencies_via_Condor.py
    ### macro file to compute efficiencies for Data
-   * Compute_Efficiencies/CountEffHighMassDimuon_DATA_v5.py
+   * Compute_Efficiencies/CountEffHighMassDimuon_DATA.py
    ### macro file to compute efficiencies for MC samples
-   * Compute_Efficiencies/CountEffHighMassDimuon_MC_v5.py
+   * Compute_Efficiencies/CountEffHighMassDimuon_MC.py
 
-Open file "ComputeEfficiencies_via_Condor_v2.py" and provide the list
+Open file "ComputeEfficiencies_via_Condor.py" and provide the list
 of Data and MC input ROOT files accordingly. Then just type:
 
-   python ComputeEfficiencies_via_Condor_v2.py
+   python ComputeEfficiencies_via_Condor.py
 
 and follow its instructions. Several jobs will be submitted via CONDOR.
 Each jobs corresponds to a computation of efficiencies of an input file.
@@ -32,11 +32,11 @@ to your ACCESS account.
 ____________________________________________________________________
 (a.2) When all jobs finished, join all ROOT files with individual
 efficiencies. To do that, copy this file to you ACCESS:
-   * Compute_Efficiencies/Gather_information_from_Results_v2.py
+   * Compute_Efficiencies/Gather_information_from_Results.py
 
 Type:
 
-   python Gather_information_from_Results_v2.py
+   python Gather_information_from_Results.py
 
 and follow its instructions. All ROOT files will be gathered in only
 one place (each file corresponding to a Data or MC sample)..
@@ -46,13 +46,13 @@ ____________________________________________________________________
    ### config file where User applies all needed settings
    * Compute_Efficiencies/SettingUP_EfficiencyPlots.h
    ### main macro file to compute final efficiencies
-   * Compute_Efficiencies/plotMuonID_MC_DATA_efficiencies_v10.cpp
+   * Compute_Efficiencies/plotMuonID_MC_DATA_efficiencies.cpp
 
-Macro "plotMuonID_MC_DATA_efficiencies_v10.cpp" will call the config
+Macro "plotMuonID_MC_DATA_efficiencies.cpp" will call the config
 file "SettingUP_EfficiencyPlots.h" as an include. You need to setup
 only the later. Then type:
 
-   root -b -l -q plotMuonID_MC_DATA_efficiencies_v10.cpp
+   root -b -l -q plotMuonID_MC_DATA_efficiencies.cpp
 
 It will compute efficiencies for the following cases:
    * Data    (apparent efficiency)
