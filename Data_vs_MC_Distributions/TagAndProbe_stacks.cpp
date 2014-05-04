@@ -1,10 +1,24 @@
-/*****************************************************************************
+ /*****************************************************************************
  *                                                                           *
  *                    This is a ROOT macro created by                        *
  *                    Angelo Santos ( angelo.santos@cern.ch )                *
- *                    on 3th of April, 2014.                                 *
+ *                    on 23th of April, 2014.                                 *
  *                    ***********************************                    *
  *                                                                           *
+ *      - Version 15:                                                        *
+ *        * comes up from version V14. The weight factors from vertex        *
+ *          multiplicity (applyied to MC samples) no longer come from        *
+ *          input trees, but are built on the fly. It is because             *
+ *          we have reaized that such weights depend on the selection        *
+ *          requirements.                                                    *
+ *        * Those weight factors are computed after apllying User's          *
+ *          pre-defined selections on the muon pairs. For that, a T&P        *
+ *          macro file called                                                *
+ *             addNVtxWeight.cxx                                             *
+ *          is implemented here as a function, where clones of the MC        *
+ *          trees are created in to contain the new "weight" variable        *
+ *          called now by "vertex_weight".
+ *                                                                           * 
  *      - Version 14:                                                        *
  *        * comes up from version V13. This version takes care of            *
  *          setting up bottom plots for the ratios Data/MC and               *
@@ -36,8 +50,8 @@
  *                                                                           * 
  *        * In the second block, vectors of variables are declared in.       *
  *                                                                           *
- *        * The third block is a file called Setting_Variables.h             *
- *          where the USER may provide:                                      *
+ *        * The third block stars reading the file Setting_Variables.h       *
+ *          (as and #include) where the USER may provide:                    *
  *           ** paths to the input ROOT files;                               *
  *           ** with corresponding weights and histogram colors;             *
  *           ** variables to be ploted;                                      *
@@ -61,6 +75,7 @@
  *                                                                           * 
  *****************************************************************************/
 
+#include <math.h>
 #include <vector>
 #include <sstream>
 #include <iostream>
@@ -69,10 +84,13 @@
 #include "TPad.h"
 #include "TTree.h"
 #include "TFile.h"
+#include "TROOT.h"
+#include "TChain.h"
 #include "THStack.h"
 #include "TCanvas.h"
 #include "TLegend.h"
 #include "TSystem.h"
+#include "TString.h"
 
 #include "Setting_Variables.h"
 
@@ -85,10 +103,12 @@ using namespace std;
 //////////////////////////////////////////////////////////////////////////////
 void read_trees ( vector <TFile*>, vector <TTree*> & );
 
-void events_per_bin ( vector <TTree*>, vector <string>, vector <vector <double> >,
-		      vector <string>, Int_t, vector <string> );
+void copy_trees ( vector <TTree*>, vector <TTree*> &, vector <string> );
 
-void create_canvas ( vector <TCanvas*> &, vector <string>, Int_t, Int_t, Int_t );
+void events_per_bin ( vector <TTree*>, vector <string>, vector <vector <double> >,
+		      vector <string>, vector <string> );
+
+void create_canvas ( vector <TCanvas*> &, vector <string>, Int_t, Int_t, Int_t, Int_t );
 
 void create_pads (vector <TPad*> &, Int_t, vector <string>, Int_t, Float_t, Float_t,
 		  Float_t, Float_t, Int_t);
@@ -101,7 +121,7 @@ Double_t normalization_factor ( vector <TH1F*> );
 
 void setup_stack ( vector <THStack*> &, vector <int>, vector <double>, vector <double>,
 		   vector <double>, vector <double>, vector <string>, vector <string>,
-		   vector <string>, Int_t );
+		   vector <string>, Int_t, Int_t );
 
 void add_histo_in_stack ( vector <TH1F*>, Double_t, vector <THStack*> &, Int_t );
 
@@ -109,6 +129,8 @@ void create_legend ( vector <TLegend*> &, vector <TH1F*>, double, double,
 		     double, double, vector <string>, int );
 
 void ratios ( vector <string>, vector <TH1F*>, Int_t, Int_t, TH1F* &, vector <string> );
+
+TTree* addNVtxWeight( vector <TTree*>, Int_t, vector <string> );
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -126,6 +148,7 @@ void TagAndProbe_stacks () {
   vector <int> nBins;
   vector <int> histo_color;
   vector <TFile*> file;
+  vector <TTree*> old_tree;
   vector <TTree*> tree;
   vector <string> output_format;
   vector <string> varName;
@@ -177,23 +200,31 @@ void TagAndProbe_stacks () {
     file.push_back(TFile::Open( input_files[i].c_str() ));
 
   cout << "*" << endl;
-  cout << "****** There are _" << file.size() << "_ input root files." << endl;
+  cout << "****** There are ___" << file.size() << "___ input root files:" << endl;
   cout << "*" << endl;
 
+  for ( Int_t i = 0; i < file.size(); i++ )
+    cout << "*\t file[" << i << "]:\t" << file[i]->GetName() << endl;
+
+  /////////////////////////////////////////////////////////////
   // Reading types of output format files will be saved in.
   Int_t nOutputFormats = ( sizeof(output_file_format) / sizeof(string) );
   for (Int_t i = 0; i < nOutputFormats; i++) {
     output_format.push_back( output_file_format[i] );
   }
+  cout << "*" << endl;
 
+  cout << "**************************************************************************" << endl;
+  /////////////////////////////////////////////////////////////
   // Passing weights of each input ROOT file into a vector of double's.
   cout << "****** Weight of each input file:" << endl;
   for ( Int_t i = 0; i < ( sizeof(weight) / sizeof(double) ); i++ ) {
     weights.push_back( weight[i] );
-    cout << "*\t" << file[i]->GetName() << "\t-> " << weights[i] << endl;
+    cout << "*\t file[" << i << "]\t-> weight: " << weights[i] << endl;
   }
   cout << "*" << endl;
 
+  /////////////////////////////////////////////////////////////
   // Combination between defaulf event selections ("default_selection") and
   // selection on the mass ("mass_selection[]") of each input ROOT file.
   stringstream selection_of_events;
@@ -207,7 +238,8 @@ void TagAndProbe_stacks () {
       selection_for_binning.push_back( selection_of_events.str() );
 
       selection_of_events.str("");
-      selection_of_events << "( " << mass_selection[i] << " && " << default_selection << " )*weight";
+      //      selection_of_events << "( " << mass_selection[i] << " && " << default_selection << " )*weight";
+      selection_of_events << "( " << mass_selection[i] << " && " << default_selection << " )";
     }
     //    cout << "...... selection_of_events: " << selection_of_events.str().c_str() << endl;
     events_selection.push_back( selection_of_events.str() );
@@ -215,18 +247,14 @@ void TagAndProbe_stacks () {
   }
   cout << "*" << endl;
 
+  /////////////////////////////////////////////////////////////
   // Compute number of variables and create a vector of variables.
   Int_t nVariables = ( sizeof(list_of_variables) / sizeof(string) );
   for (Int_t i = 0; i < nVariables; i++) {
     varName.push_back( list_of_variables[i] );
   }
-  // Tell the USER what variables will be plotted to.
-  if ( output_entries_per_bin != 1 ) {
-    cout << "****** These " << nVariables << " variables will be plotted:" << endl;
-    for (Int_t i = 0; i < nVariables; i++)
-      cout << "*\t-> " << varName[i] << endl;
-    cout << "*" << endl;
-  }
+
+  /////////////////////////////////////////////////////////////
   // In case of wanting to get results only for a small set of variables (when getting the number
   // of entries, for example), User has been told which variable names he/she is interested in.
   Int_t nFewVariables = ( sizeof(small_set_of_variables) / sizeof(string) );
@@ -234,6 +262,24 @@ void TagAndProbe_stacks () {
     few_variables.push_back( small_set_of_variables[iVar] );
   }
 
+  cout << "**************************************************************************" << endl;
+  /////////////////////////////////////////////////////////////
+  // Tell the USER what variables will be analyzed in.
+  //  if ( output_entries_per_bin != 1 ) {
+  // In case of analyzing a more complete list of variables...
+  if ( analyze_few_variables == 0 ) {
+    cout << "****** These " << nVariables << " variables will be analyzed:" << endl;
+    for (Int_t i = 0; i < nVariables; i++) cout << "*\t-> " << varName[i] << endl;
+  }
+  // In case of analyzing a small set of variables...
+  else {
+    cout << "****** These " << nFewVariables << " variables will be analyzed:" << endl;
+    for (Int_t i = 0; i < nFewVariables; i++) cout << "*\t-> " << few_variables[i] << endl;
+  }
+  cout << "*" << endl;
+  //}
+
+  /////////////////////////////////////////////////////////////
   // Loop over the number of variables to create vectors for the number of bins,
   // X and Y axis ranges, X and Y axis labels and vectors for the titles, colors
   // and legends of histograms.
@@ -252,16 +298,27 @@ void TagAndProbe_stacks () {
     histo_label.push_back( label_of_histogram[i] );
   }
 
+  cout << "**************************************************************************" << endl;
+  /////////////////////////////////////////////////////////////
   // Read trees
   cout << "****** Tree entries of each input ROOT file:" << endl;
-  read_trees(file, tree);
+  read_trees(file, old_tree);
   cout << "*" << endl;
 
+  cout << "**************************************************************************" << endl;
+  /////////////////////////////////////////////////////////////
+  // Copy trees based on selection of pairs
+  cout << "****** Copying trees to add weights from vertex multiplicity "
+       << "after applying baseline selection to MC samples:" << endl;
+  copy_trees(old_tree, tree, events_selection);
+  cout << "*" << endl;
+
+  /////////////////////////////////////////////////////////////
   // Output on screen of entries/bin/file/ variable.
   if ( output_entries_per_bin > 0 )
-    events_per_bin ( tree, varName, bin_edges, selection_for_binning, nFewVariables, few_variables );
+    events_per_bin ( tree, varName, bin_edges, selection_for_binning, few_variables );
 
-
+  /////////////////////////////////////////////////////////////
   // Stop to run the macro if would like only to get number of entries
   if ( output_entries_per_bin == 1 ) {
     cout << "*" << endl;
@@ -272,13 +329,20 @@ void TagAndProbe_stacks () {
     gSystem->Exit(0);
   }
 
+  cout << "**************************************************************************" << endl;
+  /////////////////////////////////////////////////////////////
+  // Check if plots should be saved and/or poped up, as well as
+  // if the macro should run in batch mode concerning User's
+  // input parameters in the Setting_Variables.h file
   stringstream file_name;
   if ( gROOT->IsBatch() ) {
     pop_save = 1;
     cout << "*\tIt is running in batch mode. Plots will be saved in" << endl;
-    for ( Int_t j = 0; j < nOutputFormats; j++ )
-      cout << "*\t                                                  ." << output_format[j].c_str() << " format" << endl;
-    cout << endl;
+    for ( Int_t j = 0; j < nOutputFormats; j++ ) {
+      cout << "*\t                                                  ."
+	   << output_format[j].c_str() << " format" << endl;
+    }
+    cout << "*" << endl;
   }
   else if ( pop_save == 0 )
     cout << "*\tPlots will be poped up on the screen, but not saved." << endl;
@@ -287,13 +351,15 @@ void TagAndProbe_stacks () {
     cout << "*\tPlots will be saved in" << endl;
     for ( Int_t j = 0; j < nOutputFormats; j++ )
       cout << "*\t                     ." << output_format[j].c_str() << " format" << endl;
-    cout << endl;
+    cout << "*" << endl;
   }
   else if ( pop_save == 2 ) {
     cout << "*\tPlots will be poped up on the screen and also saved in" << endl;
-    for ( Int_t j = 0; j < nOutputFormats; j++ )
-      cout << "*\t                                                     ." << output_format[j].c_str() << " format" << endl;
-    cout << endl;
+    for ( Int_t j = 0; j < nOutputFormats; j++ ) {
+      cout << "*\t                                                     ."
+	   << output_format[j].c_str() << " format" << endl;
+    }
+    cout << "*" << endl;
   }
   else
     cout << "WARNING: Value" << pop_save 
@@ -301,120 +367,164 @@ void TagAndProbe_stacks () {
 
   cout << "*" << endl;
 
+  cout << "**************************************************************************" << endl;
+  /////////////////////////////////////////////////////////////
   // Filling histograms only for the variable mass and compute the normalization factor
   // in the range mass[60, 120] GeV to be applied to the DY sample with the same range.
-  vector <TH1F*> auxiliar_histo;
+  vector <TH1F*> auxiliar_histo; // Histograms used only to compute the Data/MC factor
   Double_t normalization;
-  for ( Int_t i = 0; i < nVariables; i++) {
-    if ( varName[i] == "pair_newTuneP_mass" ) { // what is the vector related to the mass variable?
-      if ( normalize == 1 ) {
+  if ( normalize == 0 ) normalization = 1.0; // If User does NOT want to normalize MC
+  if ( normalize == 1 ) {                    // If User wants to normalize MC samples
+    for ( Int_t i = 0; i < nVariables; i++ ) {
+      // What is the vector related to the mass variable?
+      if ( varName[i] == mass_variable ) {
 	fill_histograms ( tree, auxiliar_histo, varName, events_selection,
 			  weights, nBins, xMin, xMax, histo_color, i , 999 );
+	// Get the normalization factor
+	normalization = normalization_factor ( auxiliar_histo );
+	break; // Skip from the loop! Normalization already computed!
       }
-      normalization = 1.0;
-      if ( normalize == 1 )  normalization = normalization_factor ( auxiliar_histo );
-      if ( normalize == 2 )  normalization = User_normalization;
-      break;
     }
   }
+  // If User wants to normalize MC samples using his pre-defined value
+  else if ( normalize == 2 ) normalization = User_normalization;
+  else {
+    cout << "*\t ERROR: There is no option from normalize > 2" << endl;
+  }
+
   // Delete components of "auxiliar_histo" vector
-  auxiliar_histo.erase ( auxiliar_histo.begin(), auxiliar_histo.end() );
+  //  auxiliar_histo.erase ( auxiliar_histo.begin(), auxiliar_histo.end() );
   cout << "*" << endl;
 
+
+  cout << "**************************************************************************" << endl;
+  // ______________________________________________________________________________________
   // Fill histograms and create stacks
   //
   // First of all, vector "histo" will be filled. Then the vector "histoStack"
   // is set up with labels and Y axis range. Finally, vector "histo" is added
   // in the stacks by vector "histoStack".
   Int_t count_pads = 0;
+
   cout << "****** Creating plots for each variable:" << endl;
   for (Int_t i = 0; i < nVariables; i++) {
+    /////////////////////////////////////////////////////////////
     // In case of USER wanting to get results only for a small set of variables (when getting the number
     // of entries, for example), User has been told which variable names he/she is interested in.
     //    * If "analyze_few_variables == 0", the codes runs over all listed variables.
     //    * If "analyze_few_variables == 1", the codes runs over only a small set pre-defined by User.
+
     Int_t analyze = 1; // In principle, all variables will be analyzed.
+    Int_t index   = 0; // Index for the case of list of few variables
+
     if (analyze_few_variables == 1) {
-      for(Int_t iVar = 0; iVar < nFewVariables; iVar++) {
-	if (varName[i] == few_variables[iVar]) {
-	  analyze = 1; // Analyze this variable
+      for(Int_t iFewVar = 0; iFewVar < nFewVariables; iFewVar++) {
+	if (varName[i] == few_variables[iFewVar]) {
+	  analyze = 1;     // Go ahead analyzing this variable
+	  index = iFewVar; // Index for the current variable
 	  break;
 	}
 	else
 	  analyze = 0; // Do not analyze this variable
       }
     }
-    if (analyze == 0)
-      continue; // Skip of analyzing this variables. It is not of User's interesting.
+    else index = i;    // In case of going to analyze a complete list of variables
 
-    cout << "*\tVariable " << (i+1) << "\t:\t" << varName[i] << endl;
+    /////////////////////////////////////////////////////////////
+    // Skip of analyzing this variables. This variable is not of User's interesting
+    if (analyze == 0) continue;
 
-    // Create a vector of canvases. Each canvas corresponds to each variable.   
-    create_canvas (canvas, varName, wCanvas, hCanvas, i);
-    canvas[i]->cd();
+    cout << "______________________________________________" << endl;
+    cout << "*\t Variable " << (i+1) << "\t:\t" << varName[i] << endl;
 
-    //////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////
+    // Create a vector of canvases. Each canvas corresponds to each i-th variable.
+    create_canvas (canvas, varName, wCanvas, hCanvas, i, index);
+    canvas[index]->cd();
+
+    /////////////////////////////////////////////////////////////
+    // Create 3 different pads: distribution, Data/MC and pull.
+    //
     // This pad contains Data and MC distributions
     create_pads (pad, i, varName, 1, padXmin, padYmin1, padXmax, padYmax1, count_pads);
-    //////////////////////////////////////////////////////////////////////////////////////
     // This pad contains Data/MC ratio
     create_pads (pad, i, varName, 2, padXmin, padYmin2, padXmax, padYmax2, count_pads+1);
-    //////////////////////////////////////////////////////////////////////////////////////
     // This pad contains (Data - MC)/Data_uncertainty
     create_pads (pad, i, varName, 3, padXmin, padYmin3, padXmax, padYmax3, count_pads+2);
 
+    /////////////////////////////////////////////////////////////
+    // Filling histograms for the correspondent i-th variable
     pad[count_pads]->cd();
 
     vector <TH1F*> histo;
-
-    // Filling histograms for the correspondent i-th variable
     fill_histograms (tree, histo, varName, events_selection, weights, nBins, xMin, xMax, histo_color, i, 0);
 
+    /////////////////////////////////////////////////////////////
     // Setting up the stack of histograms for the correspondent i-th variable
-    setup_stack (histoStack, nBins, xMin, xMax, yMin, yMax, histo_title, Y_label, X_label, i);
+    setup_stack (histoStack, nBins, xMin, xMax, yMin, yMax, histo_title, Y_label, X_label, i, index);
 
+    /////////////////////////////////////////////////////////////
     // Add histograms in stacks.
-    add_histo_in_stack (histo, normalization, histoStack, i);
+    add_histo_in_stack (histo, normalization, histoStack, index);
 
+    /////////////////////////////////////////////////////////////
     // Linear (0) or log (1) scale
     if ( linear_log_scale == 1 ) {
       pad[count_pads]->SetLogy();
     }
 
+    /////////////////////////////////////////////////////////////
     // Data events will be draw above stacks.
-    histoStack[i]->Draw();
+    histoStack[index]->Draw();
     histo[0]->Draw("ep same");
 
+    /////////////////////////////////////////////////////////////
     // Fill the legend
     //
     // A component of the "histoStack" vector will be draw into each canvas
     // with respective legends.
-    create_legend (legend, histo, xMinLegend, yMinLegend, xMaxLegend, yMaxLegend,
-		   histo_label, i);
-    legend[i]->Draw();
+    create_legend (legend, histo, xMinLegend, yMinLegend, xMaxLegend, yMaxLegend, histo_label, index);
+    legend[index]->Draw();
+    pad[count_pads]->SetTicks(1, 1);
     pad[count_pads]->RedrawAxis();
 
-    //////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////
     // This pad contains Data/MC ratio
     pad[count_pads+1]->cd();
 
     TH1F *DataMC_ratio;
     ratios (varName, histo, i, 1, DataMC_ratio, X_label);
-    DataMC_ratio->Draw("B");
+    DataMC_ratio->Draw("P");
+
+    TLine *line_DataMC_ratio = new TLine(xMin[i], 1.0, xMax[i], 1.0);
+    line_DataMC_ratio->SetLineColor(line_color);
+    line_DataMC_ratio->SetLineWidth(line_width);
+    line_DataMC_ratio->Draw("same");
+
     pad[count_pads+1]->SetGrid();
+    pad[count_pads+1]->SetTicks(1, 1);
     pad[count_pads+1]->RedrawAxis();
 
-    //////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////
     // This pad contains (Data - MC)/Data_uncertainty
     pad[count_pads+2]->cd();
 
     TH1F *pull;
     ratios (varName, histo, i, 2, pull, X_label);
     pull->Draw("B");
+
+    TLine *line_pull = new TLine(xMin[i], 0.0, xMax[i], 0.0);
+    line_pull->SetLineColor(line_color);
+    line_pull->SetLineWidth(line_width);
+    line_pull->Draw("same");
+
     pad[count_pads+2]->SetGrid();
+    pad[count_pads+2]->SetTicks(1, 1);
     pad[count_pads+2]->RedrawAxis();
     count_pads = count_pads + 3;
 
+    /////////////////////////////////////////////////////////////
+    // Save and/or pop plots
     if ( pop_save > 0 ) {
       for ( Int_t j = 0; j < nOutputFormats; j++ ) {
 	if ( linear_log_scale == 1 ) {
@@ -434,20 +544,28 @@ void TagAndProbe_stacks () {
 	    file_name << output_file_name << "_" << varName[i] << "_linear." << output_format[j];
 	}
 
-	canvas[i]->SaveAs( file_name.str().c_str() );
+	canvas[index]->SaveAs( file_name.str().c_str() );
 	file_name.str("");
       }
     }
 
     // Delete all components of the vector "histo".
-    histo.erase (histo.begin(), histo.end() );
-  }
+    histo.erase ( histo.begin(), histo.end() );
+  } // End of for ( Int_t i = 0; i < nVariables; i++)
+
+  /////////////////////////////////////////////////////////////
   cout << "*" << endl;
   cout << "*\t<<<<<< Done! >>>>>>" << endl;
   cout << "*" << endl;
   cout << "**************************************************************************" << endl;
   cout << "**************************************************************************" << endl;
-} // End of the main function "void TagAndProbe_stacks ()".
+
+  // Deleting auxiliary file
+  gROOT->ProcessLine(".!rm -f TagProbeZ_withNVtxWeights.root");
+
+  Avengers ();
+
+} // End of the main function "void TagAndProbe_stacks()".
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -455,19 +573,42 @@ void TagAndProbe_stacks () {
 //                   Here starts the fifth block                            //
 //                                                                          //
 //////////////////////////////////////////////////////////////////////////////
-void read_trees (vector <TFile*> f, vector <TTree*> &t) {
+void read_trees (vector <TFile*> f, vector <TTree*> &t ) {
   // This function reads trees from input ROOT
   // files into vectors of TTree's.
 
+
   for (Int_t i = 0; i < f.size(); i++) {
     t.push_back( (TTree*)f[i]->Get("tpTree/fitter_tree") );
-    cout << "*\t" << f[i]->GetName() << "\t-> " << t[i]->GetEntries() << endl;
+    cout << "*\t file[" << i << "]\t-> Entries: " << t[i]->GetEntries() << endl;
   }
 }
 
+void copy_trees ( vector <TTree*> old_tree, vector <TTree*> &new_tree, vector <string> events_selection ) {
+  // This function creates new trees from old ones with and additional variable ("vertex_weight")
+  // based on seleted pair of Tag & Probe muons.
+
+  for (Int_t i = 0; i < old_tree.size(); i++) {
+    // Should not apply any weight concerning vertex multiplicity in Data
+    if ( i == 0 ) {
+      cout << "*\t tree[" << i << "]\t"
+	   << ".................................................."
+	   << "..................................................";
+      new_tree.push_back( (TTree*)old_tree[i] );
+      cout << " Entries: " << new_tree[i]->GetEntries();
+    }
+    else {
+      cout << endl << "*\t tree[" << i << "]\t";
+
+      new_tree.push_back( (TTree*)addNVtxWeight( old_tree, i, events_selection) );
+      cout << " Entries: " << new_tree[i]->GetEntries( events_selection[i].c_str() );
+    }
+  }
+  cout << endl;
+}
+
 void events_per_bin ( vector <TTree*> t, vector <string> variable, vector <vector <double> > bin_edges,
-		      vector <string> selection_for_binning, Int_t nFewVariables, 
-		      vector <string> few_variables ) {
+		      vector <string> selection_for_binning, vector <string> few_variables ) {
   // This function compute the number of entries
   // per bin per input file per variable.
 
@@ -480,9 +621,10 @@ void events_per_bin ( vector <TTree*> t, vector <string> variable, vector <vecto
     //    * If "analyze_few_variables == 0", the codes runs over all listed variables.
     //    * If "analyze_few_variables == 1", the codes runs over only a small set pre-defined by User.
     Int_t analyze = 1; // In principle, all variables will be analyzed.
+
     if (analyze_few_variables == 1) {
-      for(Int_t iVar = 0; iVar < nFewVariables; iVar++) {
-	if (variable[i] == few_variables[iVar]) {
+      for(Int_t iFewVar = 0; iFewVar < few_variables.size(); iFewVar++) {
+	if (variable[i] == few_variables[iFewVar]) {
 	  analyze = 1; // Analyze this variable
 	  break;
 	}
@@ -490,8 +632,9 @@ void events_per_bin ( vector <TTree*> t, vector <string> variable, vector <vecto
 	  analyze = 0; // Do not analyze this variable
       }
     }
-    if (analyze == 0)
-      continue; // Skip of analyzing this variables. It is not of User's interesting.
+
+    if (analyze == 0)  // Skip of analyzing this variables. It is not of User's interesting.
+      continue;
 
     cout << "*\t* Variable -> <<<<<   " << variable[i] << "   >>>>>" << endl;
     cout << "*\t\t** Bin edges:\t\t{";
@@ -523,15 +666,15 @@ void events_per_bin ( vector <TTree*> t, vector <string> variable, vector <vecto
 }
 
 void create_canvas (vector <TCanvas*> &c, vector <string> variable,
-                   Int_t width, Int_t height, Int_t j) {
+		    Int_t width, Int_t height, Int_t j, Int_t index) {
   // This function sets the canvas concerning
   // input parameters defined by the USER.
 
   c.push_back( new TCanvas() );
-  c[j]->Divide(1,1);
-  c[j]->SetRightMargin( canvas_ratio );
-  c[j]->SetTitle( variable[j].c_str() );
-  c[j]->SetWindowSize(width, height);
+  c[index]->Divide(1,1);
+  c[index]->SetRightMargin( canvas_ratio );
+  c[index]->SetTitle( variable[j].c_str() );
+  c[index]->SetWindowSize(width, height);
   gROOT->SetStyle("Plain");
 
   gStyle->SetPadTopMargin(PadToptMargin);
@@ -587,15 +730,7 @@ void fill_histograms ( vector <TTree*> t, vector <TH1F*> &h,
   // by the USER. It is important because the USER can have total control
   // over bin numbers and x axis range.
   //
-  // "h_temp" will get a copy of a branch via "histo_temp", and histogram
-  // "h" will be a clone of "h_temp".
-  //
-  // Histogram "h" will be used in the stacks later on. If "h_temp" were
-  // used, all stylistic changes in the last histogram of the vector would
-  // affect all histograms, being against our wish that each histogram has
-  // its own style (own color, for example).
-  TH1F* histo_temp = 0;
-  vector <TH1F*> h_temp;
+  // Histogram "h" will be a clone of "histo_temp", being used in the stacks later on.
 
   // These string variables are used to handle the way as the histograms
   // are filled via "Draw()".
@@ -607,68 +742,77 @@ void fill_histograms ( vector <TTree*> t, vector <TH1F*> &h,
   for (Int_t i = 0; i < t.size(); i++) {
     // Give a different name to the histogram "histo_temp" for each j-th
     // variable and i-th input root file. Then for each "j" and "i" values,
-    // a name "histo_tempij" is given to the histogram. For example:
+    // a name "histo_tempji" is given to the histogram. For example:
     // "histo_temp00", "histo_temp01", "histo_temp10", "histo_temp11", etc.
     //
     // If the histogram name was kept unchanged, the TH1F would be replaced
     // at each loop step, probably causing a fail due a memory leakage.
     if ( k == 999) {
-      h_Name << "histo_temp" << j << i << k << rand()%1000;
-      histo_temp = new TH1F( h_Name.str() .c_str(), "", 1000, xMin[j], xMax[j] );
+      // "k = 999" means that this functions has been called to compute Data/MC
+      // scale factors to normalize the MC samples later on.
+      h_Name << "histo_temp" << j << i << k;
+      // When "k = 999", variable analyzed is the invariant mass, so 1000 bins
+      // are used to improve computation of MC normalization factor.
+      TH1F *histo_temp = new TH1F( h_Name.str() .c_str(), "", 1000, xMin[j], xMax[j] );
     }
     else {
-      // A random number (bettwen 1 and 1000) is created to ensure all histograms
-      // will not have the same name.
-      h_Name << "histo_temp" << j << i << rand()%1000;
-      histo_temp = new TH1F( h_Name.str() .c_str(), "", nBins[j], xMin[j], xMax[j] );
+      h_Name << "histo_temp" << j << i;
+      TH1F *histo_temp = new TH1F( h_Name.str() .c_str(), "", nBins[j], xMin[j], xMax[j] );
     }
 
     // "Draw()" function gets a "const char" type as input. Then it is
     // necessary to handle with "string"s and "const char"s in order to
     // provide the correct variable name to be passed to the correct histogram.
+    // "k = 999" is used to create histograms to compute MC normalization factor.
+    if ( k == 999) variable_name = mass_variable.c_str();
+    // Tell which variable would be passed in via "j".
+    else           variable_name = variable[j].c_str();
+
     //-------------------------------------------------------------------------
-    //    if ( (variable[j].c_str() == "tag_innertrackPtRelError") && (i < 9) )
-    //      variable_name = "tag_InnerTkSigmaPtOverPt";
-    //    else
-    if ( k == 999)
-      variable_name = mass_variable.c_str(); // Used to create histograms to compute a normalization factor.
-    else
-      variable_name = variable[j].c_str(); // Tell which variable would be passed in.
-
-    //---------------------------------------------------------------------------------------------------------------
-    var_temp = variable_name; // Copy a "const char" to a "string".
+    var_temp = variable_name;                    // Copy a "const char" to a "string".
     var_temp = var_temp + " >> " + h_Name.str(); // Include the histogram name.
-    variable_name = ""; // Clear the "const char" object.
-    variable_name = var_temp.c_str(); // Copy a "string" to a "const char".
-    // Draw variable to a histogram applying event selections defined by USER.
-    t[i]->Draw( variable_name, events_selection[i].c_str() );
+    variable_name = "";                          // Clear the "const char" object.
+    variable_name = var_temp.c_str();            // Copy a "string" to a "const char".
 
-    // Histogram "h_temp" is filled using the histogram name "h_name".
-    // Histogram "h_temp" is then copied into histogram "h".
-    // A collor is set to "h".
-    h_temp.push_back( (TH1F*)gPad->FindObject( h_Name.str() .c_str() ) );
-    h.push_back( (TH1F*)h_temp[i]->Clone() );
-    if ( i == 0 ) {
-      h[i]->Scale( weights[i] );
-      h[i]->SetLineColor( 1 );
-      h[i]->SetMarkerColor( 1 );
-      h[i]->SetMarkerStyle( 20 );
-      h[i]->SetMarkerSize( 0.7 );
+    // Draw variable to a histogram applying event selections defined by USER.
+    if (i == 0) { // In case of Data sample, use only baseline selections
+      t[i]->Draw( variable_name, events_selection[i].c_str() );
     }
-    else {
+    else { // In case of MC samples, add the "vertex_weight" to the baseline selections
+      stringstream weighted_selection;
+      weighted_selection << events_selection[i] << "*vertex_weight";
+
+      t[i]->Draw( variable_name, weighted_selection.str().c_str() );
+    }
+
+    // Each element of the vector "h" is a clone of each "histo_temp" histogram,
+    // taking care to get different names.
+    h_Name << "clone";
+    h.push_back( (TH1F*)histo_temp->Clone( h_Name.str().c_str() ) );
+
+    if ( i == 0 ) { // Data events
+      h[i]->Scale( weights[i] );
+      h[i]->SetLineColor(1);
+      h[i]->SetMarkerColor(1);
+      h[i]->SetMarkerSize(0.7);
+      h[i]->SetMarkerStyle(20);
+    }
+    else {          // MC samples
       h[i]->Scale( weights[i] );
       h[i]->SetFillColor( color[i] );
     }
+
     // Clear objects for the next loop step
     variable_name = "";
     h_Name.str("");
     h_Name.clear();
+    // Deleting histograms
+    delete histo_temp;
   }
-  // Delete objects to free memory.
-  // Delete string "var_temp" and all components of the vector "h_temp".
-  delete histo_temp;
-//  var_temp.erase( var_temp.begin(), var_temp.end() );
-//  h_temp.erase( h_temp.begin(), h_temp.end() );
+
+  // Deleting histograms
+  //  delete histo_temp;
+  //  h_temp.erase ( h_temp.begin(), h_temp.end() );
 } // End of "void fill_histograms()".
 
 Double_t normalization_factor ( vector <TH1F*> h ) {
@@ -686,11 +830,17 @@ Double_t normalization_factor ( vector <TH1F*> h ) {
     integral = integral + ( h[j]->Integral( bin_min, bin_max ) );
     //    cout << ".... integral[" << j << "](" << bin_min << ", " << bin_max << "): " << integral << endl;
   }
+
+  if ( !(integral > 0) ) {
+    cout << "*\t\t ERROR: MC Integral = 0 !!!!!!!!!\n" << endl;
+    gSystem->Exit(0);
+  }
+
   bin_min = h[0]->FindBin( 60 );
   bin_max = h[0]->FindBin( 120 );
   //  cout << ".... integral[0](" << bin_min << ", " << bin_max << "): " << h[0]->Integral( bin_min, bin_max ) << endl;
   integral = h[0]->Integral( bin_min, bin_max ) / integral;
-  cout << "****** MC normalization factor: " << integral << endl;
+  cout << "*\t* MC normalization factor: " << integral << endl;
 
   return integral;
 }
@@ -699,7 +849,7 @@ void setup_stack ( vector <THStack*> &h, vector <int> nBins,
 		   vector <double> xMin, vector <double> xMax,
 		   vector <double> yMin, vector <double> yMax,
 		   vector <string> title, vector <string> y_label,
-		   vector <string> x_label, Int_t j ) {
+		   vector <string> x_label, Int_t j, Int_t index ) {
   // This fuction sets up the THStack vector "h" with labels, title
   // and Y axis range. Each component of "h" corresponds to one
   // variable (j-th variable).
@@ -721,10 +871,10 @@ void setup_stack ( vector <THStack*> &h, vector <int> nBins,
 
   // THStack receives labels (already set up by a TH1F above) via SetHistogram().
   // Title and Y axis range are provided directly to the THStack.
-  h[j]->SetHistogram( h_stack );
-  h[j]->SetMinimum( yMin[j] );
-  //  h[j]->SetMaximum( yMax[j] );
-  h[j]->SetTitle( title[j].c_str() );
+  h[index]->SetHistogram( h_stack );
+  h[index]->SetMinimum( yMin[j] );
+  //  h[index]->SetMaximum( yMax[j] );
+  h[index]->SetTitle( title[j].c_str() );
 
   // Clear the "stringstream" object to free the memory.
   h_Name.str("");
@@ -732,7 +882,7 @@ void setup_stack ( vector <THStack*> &h, vector <int> nBins,
 } // End of "void setup_stack()".
 
 void add_histo_in_stack ( vector <TH1F*> h, Double_t normalization,
-			  vector <THStack*> &h_Stack, Int_t j ) {
+			  vector <THStack*> &h_Stack, Int_t index ) {
   // This add each component of the TH1F vector "h" in stack into
   // the THStack "h_Stack". It is added in descending order, so the the
   // histogram from the first input root file will be in the top of the
@@ -742,34 +892,33 @@ void add_histo_in_stack ( vector <TH1F*> h, Double_t normalization,
   Double_t Data_integral = 0.;
 
   for (Int_t i = h.size() - 1; i > 0; i--) {
-    //    if ( i == 0 )
     h[i]->Scale( normalization );
-    h_Stack[j]->Add( h[i] );
-    //    cout << "Histo[" << i << "] integral: " << h[i]->Integral() << endl;
+    h_Stack[index]->Add( h[i] );
+
     stack_MC_integral = stack_MC_integral + h[i]->Integral();
   }
 
   Data_integral = h[0]->Integral();
-  cout << "Histo[Data] integral: " << Data_integral << endl;
-  cout << "Histo[MC] integral: " << stack_MC_integral << endl;
-  cout << "Ratio Data/MC: " << (1.0*Data_integral)/stack_MC_integral << endl;
+  cout << "*\t\t * Histo[Data] integral = " << Data_integral << endl;
+  cout << "*\t\t * Histo[MC] integral = " << stack_MC_integral << endl;
+  cout << "*\t\t * Ratio Data/MC = " << (1.0*Data_integral)/stack_MC_integral << endl;
 }
 
 void create_legend ( vector <TLegend*> &l, vector <TH1F*> h, double xMin,
 		     double yMin, double xMax, double yMax,
-		     vector <string> label, int j ) {
+		     vector <string> label, int index ) {
   // This function creates a legend for each variable.
 
   l.push_back( new TLegend(xMin, yMin, xMax, yMax) );
-  l[j]->SetFillColor(0);
-  l[j]->SetBorderSize(1);
+  l[index]->SetFillColor(0);
+  l[index]->SetBorderSize(1);
 
   // Provide legends looping over all histograms
   for (Int_t i = 0; i < h.size(); i++)
     if ( i == 0 )
-      l[j]->AddEntry(h[i], label[i].c_str(),"pl");
+      l[index]->AddEntry(h[i], label[i].c_str(),"pl");
     else
-      l[j]->AddEntry(h[i], label[i].c_str(),"f");
+      l[index]->AddEntry(h[i], label[i].c_str(),"f");
 }
 
 
@@ -854,10 +1003,190 @@ void ratios ( vector <string> variable, vector <TH1F*> histo, Int_t j,
   h_ratio->GetXaxis()->SetLabelSize(x_labelSize3);        // size of numbers in y axis
 
   // Fill ratio plots with colors defined by User
-  h_ratio->SetLineWidth(line_width);
-  h_ratio->SetLineColor(ratio_color);
-  h_ratio->SetFillColor(ratio_color);
+  if (ratio_type == 1) {
+    h_ratio->SetMarkerStyle(dot_size);
+    h_ratio->SetMarkerColor(ratio_color);
+  }
+  else {
+    h_ratio->SetLineColor(ratio_color);
+    h_ratio->SetFillColor(ratio_color);
+  }
 
   ratios_name.str("");
   ratios_name.clear();
 }
+
+
+// Function responsible for creating a weight variable based on the differences
+// between vertex multiplicity distributions between Data and MC samples.
+TTree* addNVtxWeight( vector <TTree*> trees, Int_t j, vector <string> cut ) {
+  //, cut="(tag_IsoMu24_eta2p1 || tag_IsoMu24) && tag_combRelIso < 0.15") {
+
+  /////////////////////////////////////////////////////////////
+  // Check if Data and MC trees are not empty
+  if ( trees[0]->GetEntries() == 0 ) {
+    std::cerr << "Data tree is empty" << std::endl;
+    return;
+  }
+  else if ( trees[j]->GetEntries() == 0 ) {
+    std::cerr << "MC tree is empty" << std::endl;
+    return;
+  }
+  else {
+    // Trees are OK!
+  }
+
+  stringstream histogram_name;
+  histogram_name << "hData_" << j;
+
+  TH1F *hData = new TH1F(histogram_name.str().c_str(), histogram_name.str().c_str(), 100, -0.5, 99.5);
+  histogram_name.str("");
+  histogram_name << "hMC_" << j;
+  TH1F *hMC   = new TH1F(histogram_name.str().c_str(), histogram_name.str().c_str(), 100, -0.5, 99.5);
+
+  /////////////////////////////////////////////////////////////
+  // Filling Data distributions of vertices
+  stringstream canvas_weight;
+  canvas_weight << "canvas_weight_" << j;
+  TCanvas *c1 = new TCanvas(canvas_weight.str().c_str(), canvas_weight.str().c_str());
+  c1->Divide(2,1);
+  c1->cd(1);
+  histogram_name.str("");
+  histogram_name << "tag_nVertices >> hData_" << j;
+  trees[0]->Draw(histogram_name.str().c_str(), cut[j].c_str());
+
+  c1->cd(2);
+  // Filling MC distributions of vertices
+  histogram_name.str("");
+  histogram_name << "tag_nVertices >> hMC_" << j;
+  trees[j]->Draw(histogram_name.str().c_str(), cut[j].c_str());
+
+  /////////////////////////////////////////////////////////////
+  // Normalizing Data and MC distributions to have integral "1"
+  double h_integral;
+  h_integral = (double)hData->Integral();
+  // Check if Data histogram is empty
+  if ( h_integral > 0 )
+    hData->Scale(1.0/(double)h_integral);
+  else {
+    hData->Scale(0.0);
+    cout << endl << "*\t\t Data histogram is empty after baseline selection!";
+    cout << endl << "*\t\t Weigths will be set to zero for this MC sample!";
+    cout << endl << "*\t tree[" << j << "]\t";
+  }
+
+  h_integral = (double)hMC->Integral();
+  // Check if MC histogram is empty
+  if ( h_integral > 0 )
+    hMC->Scale(1.0/(double)h_integral);
+  else {
+    hMC->Scale(0.0);
+    if ( !((double)hData->Integral() > 0) ) {
+      cout << endl << "*\t\t MC histogram is empty after baseline selection!";
+      cout << endl << "*\t\t Weights will be set to zero for this MC sample!";
+      cout << endl << "*\t tree[" << j << "]\t";
+
+    }
+    else {
+      cout << endl << "*\t\t MC histogram is empty after baseline selection!";
+      cout << endl << "*\t\t Some weights will be set to \"1\" for this MC sample!";
+      cout << endl << "*\t tree[" << j << "]\t";
+    }
+  }
+  
+  /////////////////////////////////////////////////////////////
+  // Computing weights..............................................
+  // Compute N different weight values based on the N number of bins
+  // from Data/MC in the vertex multiplicity distribution.
+  std::vector<double> weights(hData->GetNbinsX()+1, 1.0);
+  for ( int m = 1, n = weights.size(); m < n; ++m ) {
+    double nData = (double)hData->GetBinContent(m);
+    double nMC   = (double)  hMC->GetBinContent(m);
+
+    // If nData > 0 && nMC > 0  -->  weight = nData/nMC
+    // If nData > 0 && nMC = 0  -->  weight = 1
+    // If nData = 0             -->  weight = 0
+    if ( nData > 0 ) weights[m-1] = (nMC > 0 ? (double)nData/(double)nMC : 1.0);
+    else             weights[m-1] = 0.0;
+  }
+
+  /////////////////////////////////////////////////////////////
+  // Adding vertex weight variable
+  Float_t nVtx, weight;
+  trees[j]->SetBranchAddress("tag_nVertices", &nVtx);
+
+  // TTrees will be created inside a TFile.
+  // It is not a good idea to to create too
+  // many big trees being in memory-resident.
+  TFile *fOut = new TFile("TagProbeZ_withNVtxWeights.root", "RECREATE");
+  TTree *tOut = (TTree*)trees[j]->CloneTree(0);
+  tOut->Branch("vertex_weight", &weight, "vertex_weight/F");
+
+  /////////////////////////////////////////////////////////////
+  // Loop over number of entries and fill the new tree with
+  // the "vertex_weight" variable.
+  int step = trees[j]->GetEntries()/100;
+  for (int m = 0, n = trees[j]->GetEntries(); m < n; ++m) {
+    trees[j]->GetEntry(m);
+
+    weight = (float)weights[int(nVtx)];
+    tOut->Fill();
+
+    if ((m+1) % step == 0) {
+      printf(".");
+      fflush(stdout);
+    }
+  }
+
+  /////////////////////////////////////////////////////////////
+  // Deleting histograms and canvas
+  delete hData;
+  delete hMC;
+  delete c1;
+
+  stringstream tree_name;
+  tree_name << "clone_tree_" << j;
+  return (TTree*)tOut->Clone( tree_name.str().c_str() );
+}
+
+void Avengers () {
+  printf ("\n\n");
+  printf ("                               //====|| \n");
+  printf ("                              //     || \n");
+  printf ("                        .. ..//      ||.\n");
+  printf ("                 .. .. ..   //  //|  ||. .. ..\n");
+  printf ("               .. ..       //  //||  ||    .. ..\n");
+  printf ("            .. ..         //  // ||  ||       .. ..\n");
+  printf ("          .. ..          //  //  ||  ||         .. ..\n");
+  printf ("        .. ..           //  //   ||  ||           .. ..\n");
+  printf ("       .. ..           //  //    ||  ||            .. ..\n");
+  printf ("      .. ..           //  //     ||  ||             .. ..\n");
+  printf ("     .. ..           //  //      ||  ||              .. ..\n");
+  printf ("    .. ..           //  //       ||  ||               .. ..\n");
+  printf ("   .. ..           //  //        ||  ||                .. ..\n");
+  printf ("   .. ..          //  //         ||  ||                .. ..\n");
+  printf ("   .. ..         //  //          ||\\\\||                .. ..\n");
+  printf ("   .. ..        //  //===========|| \\\\|                .. ..\n");
+  printf ("   .. ..       //                    --                .. ..\n");
+  printf ("   .. ..      //  //=============|| //|                .. ..\n");
+  printf ("    .. ..    //  //              ||//||               .. ..\n");
+  printf ("     .. ..  //  //               ||  //              .. ..\n");
+  printf ("      .. ..//  //                || //|             .. ..\n");
+  printf ("       .. //  //                 ||//||            .. ..\n");
+  printf ("        .//  //                  ======           .. .\n");
+  printf ("        //  //.                                 .. ..\n");
+  printf ("       //  //. ..                             .. ..\n");
+  printf ("      //  //   .. ..                       .. ..\n");
+  printf ("     //  //      .. .. ..             .. .. ..\n");
+  printf ("    //  //             ... .... .... ...\n");
+  printf ("   //  //                     ...\n");
+  printf ("  //==// \n");
+  printf ("\n\n.......................Avengers\n\n\n\n");
+}
+
+/////////////////////////////////////////////////
+/////////                            ////////////
+/////////      End of Macro file     ////////////
+/////////                            ////////////
+/////////////////////////////////////////////////
+

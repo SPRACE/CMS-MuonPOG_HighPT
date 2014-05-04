@@ -27,8 +27,8 @@
 	   * takes care of settings for bottom plots as Data/MC and
 	     (Data - MC)/uncertainty_of_Data
 ********************************************************************/
-/////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////
 // Set width and height of canvas.
 // NOTE: It is safer to not touch in the canvas settup, unless you
 //       know what you are doing.
@@ -36,9 +36,11 @@ Float_t canvas_ratio = 0.29; // right side percent of the pad not covered
 Int_t wCanvas = 750;  // width
 Int_t hCanvas = 600;  // height
 
+//////////////////////////////////////////////////////////////////
 // Would you like to apply a linear (0) or a log scale (1) to Y axis?
 Int_t linear_log_scale = 1;
 
+//////////////////////////////////////////////////////////////////
 // Would you like to only pop up the plots, or to only save them, or to do both?
 // In case of USER running in batch mode ('root -b' option), this code
 // will automatically save plots in ".png" format.
@@ -48,34 +50,40 @@ Int_t linear_log_scale = 1;
 //   - Both (pop up and save) -> 2
 Int_t pop_save = 1;
 
+//////////////////////////////////////////////////////////////////
 // If USER wants to save plots, tell what format:
 // pdf? png? eps? root?
 string output_file_format[] = {"png", "pdf", "root"};
 
+//////////////////////////////////////////////////////////////////
 // If USER wants to save plots, provide a commom name.
-//string output_file_name = "distribution_TP_ID_v14.11_BaselineSelections_v9";
-string output_file_name = "distribution_TP_ID_v14.11_BaselineSelections_WithBestPair_v9";
+string output_file_name = "distribution_TP_ID_v15.1_BaselineSelections_v9";
+//string output_file_name = "distribution_TP_ID_v15.1_BaselineSelections_WithBestPair_v9";
 
+//////////////////////////////////////////////////////////////////
 // Would you like to get the entries per bin per input file per variable?
 // If "NO"  -> output_entries_per_bin = 0  || (macro will create plots only)
 // If "YES" -> output_entries_per_bin = 1  || (macro will get entries only)
 // If "YES" -> output_entries_per_bin > 1  || (macro will do both things: create plots and get entries)
 Int_t output_entries_per_bin = 0;
 
+//////////////////////////////////////////////////////////////////
 // Would you like to scale MC samples?
-// If "NO"  -> normalize = 0
-// If "YES" -> normalize = 1 (from normalization in Z peak based on data / MC ratio)
-// If "YES" -> normalize = 2 (from User's pre-defined value)
+// If "NO"  ---> normalize = 0 (all MC samples will have a normalization factor == 1)
+// If "YES" ---> normalize = 1 (from normalization in Z peak based on data / MC ratio)
+// If "YES" ---> normalize = 2 (from User's pre-defined value)
 Int_t normalize            = 1;
-//Float_t User_normalization = 1.06019; // In case of using "normalize = 2" for BaselineSelections
-//Float_t User_normalization = 1.04756; // In case of using "normalize = 2" for BaselineSelections_WithBestPair
+// In case of -> normalize = 2, User has to write bellow what is the MC normalization factor.
+Float_t User_normalization = 1.06019;
 
+//////////////////////////////////////////////////////////////////
 // Set legend position
 double xMinLegend = 0.71; // minimum x position of the legend
 double yMinLegend = 0.01; // minimum y position of the legend
 double xMaxLegend = 0.99; // maximum x position of the legend
 double yMaxLegend = 1.00; // maximum y position of the legend
 
+//////////////////////////////////////////////////////////////////
 // Set pads position
 Float_t padXmin  = 0.00;  // minimum x position of the pad1
 Float_t padXmax  = 1.00;  // maximum x position of the pad1
@@ -92,27 +100,33 @@ Float_t PadLeftMargin   = 0.10; // pad left margin
 Float_t PadRightMargin  = 0.30; // pad right margin
 Float_t PadBottomMargin = 0.30; // pad bottom margin
 
-// Set line color and line width of ratio plots
-Int_t ratio_color = 4;
-Int_t line_width = 2;
+//////////////////////////////////////////////////////////////////
+// Set dot size, line color and line width of ratio plots
+Int_t dot_size    = 8;  // Size of dots in the Data/MC ratio
+Int_t line_color  = 4;  // Straight line indicating the ideal position
+Int_t line_width  = 1;  // Straight line indicating the ideal position
+Int_t ratio_color = 46; // Color of dots and histograms in the ratio plots
+
 
 //////////////////////////////////////////////////////////////////
-// Setting histograms on pad1
+// Setting histograms on the pads
 //
 // NOTE: It is safer to not touch in the histograms settup, unless you
 //       know what you are doing.
+//
+// Setting histograms on pad1
 Float_t y_title_offset1 = 0.63; // distance between label and Y axis.
 Float_t y_titleSize1    = 0.06; // title size of Y axis
 Float_t y_labelSize1    = 0.05; // size of number along Y axis
-//////////////////////////////////////////////////////////////////
+//
 // Setting histograms on pad2
 Float_t y_title_offset2 = 0.30; // distance between label and Y axis.
 Float_t y_titleSize2    = 0.12; // title size of Y axis
 Float_t y_labelSize2    = 0.12; // size number along Y axis
-Float_t y_Min2          = -0.5; // minimum y position of ratio in pad2
-Float_t y_Max2          = 3.00; // maximum y position of ratio in pad2
+Float_t y_Min2          =-0.25; // minimum y position of ratio in pad2
+Float_t y_Max2          = 2.75; // maximum y position of ratio in pad2
 string  y_title2        = "Data / MC"; // title of Y axis
-//////////////////////////////////////////////////////////////////
+//
 // Setting histograms on pad3
 Float_t x_title_offset3 = 0.90; // distance between label and X axis.
 Float_t x_titleSize3    = 0.15; // title size of X axis
@@ -121,10 +135,11 @@ Float_t y_title_offset3 = 0.39; // distance between label and Y axis.
 Float_t y_titleSize3    = 0.09; // title size of Y axis
 Float_t y_labelSize3    = 0.08; // size of number along Y axis
 Float_t y_Min3          = -5.0; // minimum y position of ratio in pad3
-Float_t y_Max3          = 5.00; // maximum y position of ratio in pad3
+Float_t y_Max3          = 4.50; // maximum y position of ratio in pad3
 string  y_title3        = "(Data-MC)/#sigma_{Data}"; // title of Y axis
 
 
+//////////////////////////////////////////////////////////////////
 // Include bellow as many lines as you need to add ROOT files.
 // First input ROOT file must have DATA events (root file 0).
 // The code will create histogrms in stacks following the order
@@ -134,7 +149,7 @@ string  y_title3        = "(Data-MC)/#sigma_{Data}"; // title of Y axis
 // file entry bellow.
 //============================[[ ROOT files with addBestPair_RunEvent_v9.cxx ]]===========================
 //============================[[ Information about selected events only      ]]===========================
-/*
+
 string input_files[] = {
   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_Data_RunC__Mass_mu1_mu2__gt_0_GeV.root",       // root file 0 (Data)
   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_20_GeV.root",        // root file 1 (DY->MuMu M 20)
@@ -155,10 +170,10 @@ string input_files[] = {
   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_W_Jets__Mass_mu1_mu2__gt_0_GeV.root",          // root file 16 (W+Jets->lnu)
   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_Inclusive_QCD__Mass_mu1_mu2__gt_0_GeV.root"    // root file 17 (Inclusive QCD)
 };
-*/
+
 //============================[[ ROOT files with addBestPair_RunEvent_v9.cxx            ]]================================
 //============================[[ Information about selected events + filtered T&P pairs ]]===========================
-
+/*
 string input_files[] = {
   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_Data_RunC__Mass_mu1_mu2__gt_0_GeV.root",       // root file 0 (Data)
   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_20_GeV.root",        // root file 1 (DY->MuMu M 20)
@@ -179,8 +194,9 @@ string input_files[] = {
   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_W_Jets__Mass_mu1_mu2__gt_0_GeV.root",          // root file 16 (W+Jets->lnu)
   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_Inclusive_QCD__Mass_mu1_mu2__gt_0_GeV.root"    // root file 17 (Inclusive QCD)
 };
+*/
 
-
+//////////////////////////////////////////////////////////////////
 // Write the weight of each input ROOT file.
 // Of course, weight of DATA is "1.0".
 double weight[] = {
@@ -205,7 +221,7 @@ double weight[] = {
   //    0.4290    // input file 18 (DY+Jets->LL M 50)
 };
 
-
+//////////////////////////////////////////////////////////////////
 // Write the list of variables inside an array.
 string list_of_variables[] = {
   "pair_newTuneP_probe_pt", //--------------> 1
@@ -242,13 +258,14 @@ string list_of_variables[] = {
   "pair_DimuonVtxZcoordinateFromBS" //------> 32
 };
 
+//////////////////////////////////////////////////////////////////
 // In case of USER wanting to get results only for a small set of variables (when getting the
 // number of entries, for example), User has to tell which are the variable names (as above)
 // he/she is interested in. First of all, User has to tell if wanting to either analyze all
 // variables or only a small set of them.
 // WARNING: it is mandatory to have the variable of dimuon-mass ("pair_newTuneP_mass") included.
 Int_t analyze_few_variables = 0; // 0 -> Analyze all variables
-/////////////////////////////////// 1 -> Analyze only a small set of variables
+/////////////////////////////////// 1 -> Analyze only a small set of variables (as listed bellow)
 string small_set_of_variables[] = {
   "pair_newTuneP_mass", //------------------> 4
   "tag_nVertices", //-----------------------> 5
@@ -258,14 +275,15 @@ string small_set_of_variables[] = {
   "NewTuneP_pt" //--------------------------> 16
 };
 
-
+//////////////////////////////////////////////////////////////////
 // USER has to tell what is the variable name related to the mass.
 string mass_variable = "pair_newTuneP_mass";
 
+//////////////////////////////////////////////////////////////////
 // Write the selections on the mass with respect to each input ROOT file.
 string mass_selection[] = {
   "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)", // root file 0  (Data)
-  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass <  120.0)", // root file 1  (DY->MuMu M 20)
+  "(pair_newTuneP_mass >=   20.0) && (pair_newTuneP_mass <  120.0)", // root file 1  (DY->MuMu M 20)
   "(pair_newTuneP_mass >=  120.0) && (pair_newTuneP_mass <  200.0)", // root file 2  (DY->MuMu M 120)
   "(pair_newTuneP_mass >=  200.0) && (pair_newTuneP_mass <  500.0)", // root file 3  (DY->MuMu M 200)
   "(pair_newTuneP_mass >=  500.0) && (pair_newTuneP_mass <  800.0)", // root file 4  (DY->MuMu M 500)
@@ -284,9 +302,12 @@ string mass_selection[] = {
   "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)"  // root file 17 (Inclusive QCD)
 };
 
-
+//////////////////////////////////////////////////////////////////
 // Write the default event selections (with exception of mass).
-string default_selection = "(pair_passBaselineSelections == 1)";
+string default_selection = "(pair_passBaselineSelections == 1) && \
+(pair_DimuonVtxFitNormQui2 < 2.0) && \
+((tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt) > -0.4) && \
+((tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt) <  0.4)";
 // && (tag_MET < 50.0) && \
 //(((tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt)) > -0.5) && \
 //(((tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt)) < 0.4)";
@@ -307,6 +328,7 @@ string default_selection = "(pair_passBaselineSelections == 1)";
 //(tag_NewTuneP_pt > 45.) && (pair_collinearity1 > 0.02) && (pair_dz >= -0.2) && (pair_dz <= 0.2) && \
 //(pair_DimuonVtxFitNormQui2 < 10.)";
 
+//////////////////////////////////////////////////////////////////
 // Number of bins, Y and X axis ranges and stylistic definitions from USER.
 //
 // If you want, you can also provide the histogram title and the Y and X
@@ -346,6 +368,7 @@ double y_maximum[] = {1000000., 50000., 50000., 1000000., 100000., 500000., 1000
 		      1000000., 500000., 50000., 500000.};
 //---------------------------------------------------------------
 
+//////////////////////////////////////////////////////////////////
 // Provide label of X axis.
 string x_axis_label[] = {
   "p_{T} #left[GeV/c#right]",
@@ -382,6 +405,7 @@ string x_axis_label[] = {
   "pair_DimuonVtxZcoordinateFromBS"
 };
 
+//////////////////////////////////////////////////////////////////
 // Provide label of Y axis.
 string y_axis_label[] ={
   "Events",
@@ -390,7 +414,7 @@ string y_axis_label[] ={
   "Events",
   "Events",
   "Events",
-  "Events", //---------------------------------------
+  "Events",
   "Events",
   "Events",
   "Events",
@@ -418,13 +442,15 @@ string y_axis_label[] ={
   "Events"
 };
 
-// Provide titles
+//////////////////////////////////////////////////////////////////
+// Provide titles (Not implemented yet)
 string title_of_histogram[] = {"", "", "", "", "", "", "",
 			       "", "", "", "", "", "", "",
 			       "", "", "", "", "", "", "",
 			       "", "", "", "", "", "", "",
                                "", "", "", ""};
 
+//////////////////////////////////////////////////////////////////
 // Provide label of histograms concerning each input ROOT file
 string label_of_histogram[] = {
   "Data-RunC, 7.05 fb^{-1}",   // root file 0  (Data)
@@ -447,10 +473,12 @@ string label_of_histogram[] = {
   "Inclusive QCD"                                   // root file 17 (Inclusive QCD)
 };
 
+//////////////////////////////////////////////////////////////////
 // The first color number will be the color of the histograms correspondent to the first
 // input ROOT file, while the last color number will be assigned to the last input file.
 int color_of_histogram[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18};
 
+//////////////////////////////////////////////////////////////////
 // Write the binning for each variable:
 //
 double pt_bins[] = {45., 50., 55., 60., 65., 70., 75., 80., 85., 90., 140., 300., 500., 1000.};
