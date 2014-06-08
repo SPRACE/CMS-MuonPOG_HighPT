@@ -2,8 +2,15 @@
  *                                                                           *
  *                    This is a ROOT macro created by                        *
  *                    Angelo Santos ( angelo.santos@cern.ch )                *
- *                    on 23th of April, 2014.                                 *
+ *                    on 15th of May, 2014.                                  *
  *                    ***********************************                    *
+ *                                                                           *
+ *      - Version 16:                                                        *
+ *        * comes up from version V15. Include the possibility to save       *
+ *          the histograms in end, so someone can analyze them later.        *
+ *        * Now MC normalization no longer comes from the ratio between      *
+ *          the Data and MC invariant mass around the Z mass (from 60 to     *
+ *          120 GeV), but from the ratio between gaussian fits on them.      *
  *                                                                           *
  *      - Version 15:                                                        *
  *        * comes up from version V14. The weight factors from vertex        *
@@ -92,7 +99,7 @@
 #include "TSystem.h"
 #include "TString.h"
 
-#include "Setting_Variables.h"
+#include "Setting_Variables5.h"
 
 using namespace std;
 
@@ -123,7 +130,7 @@ void setup_stack ( vector <THStack*> &, vector <int>, vector <double>, vector <d
 		   vector <double>, vector <double>, vector <string>, vector <string>,
 		   vector <string>, Int_t, Int_t );
 
-void add_histo_in_stack ( vector <TH1F*>, Double_t, vector <THStack*> &, Int_t );
+void add_histo_in_stack ( vector <TH1F*> &, Double_t, vector <THStack*> &, Int_t );
 
 void create_legend ( vector <TLegend*> &, vector <TH1F*>, double, double,
 		     double, double, vector <string>, int );
@@ -182,7 +189,7 @@ void TagAndProbe_stacks () {
   cout << "*\t by the USER in the file Setting_Variables.h." << endl;
   cout << "*" << endl;
 
-  fill_bins (bin_edges);
+  //  fill_bins (bin_edges);
 
   cout << "*" << endl;
   cout << "*\t Applying common selection: " << default_selection.c_str() << endl;
@@ -368,6 +375,7 @@ void TagAndProbe_stacks () {
   cout << "*" << endl;
 
   cout << "**************************************************************************" << endl;
+  cout << "*\t Computing MC normalization factor" << endl;
   /////////////////////////////////////////////////////////////
   // Filling histograms only for the variable mass and compute the normalization factor
   // in the range mass[60, 120] GeV to be applied to the DY sample with the same range.
@@ -379,7 +387,7 @@ void TagAndProbe_stacks () {
       // What is the vector related to the mass variable?
       if ( varName[i] == mass_variable ) {
 	fill_histograms ( tree, auxiliar_histo, varName, events_selection,
-			  weights, nBins, xMin, xMax, histo_color, i , 999 );
+			  weights, nBins, xMin, xMax, histo_color, i, 999 );
 	// Get the normalization factor
 	normalization = normalization_factor ( auxiliar_histo );
 	break; // Skip from the loop! Normalization already computed!
@@ -545,6 +553,27 @@ void TagAndProbe_stacks () {
 	}
 
 	canvas[index]->SaveAs( file_name.str().c_str() );
+
+	// Save histograms in a ROOT format, so one can analyzed them later
+	// (optimization cuts, for example).
+	if ( j+1 == nOutputFormats ) {
+	  file_name.str("");
+	  if ( varName[i] == "(TMath::Pi() - pair_collinearity1)" )
+	    file_name << "Histograms_" << output_file_name << "_" << "pair_collinearity1.root";
+	  else if ( varName[i] == "(tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt)" )
+	    file_name << "Histograms_" << output_file_name << "_" << "pt_balance.root";
+	  else
+	    file_name << "Histograms_" << output_file_name << "_" << varName[i] << ".root";
+
+	  TFile *fileOutPut = new TFile( file_name.str().c_str(), "RECREATE" );
+	  fileOutPut->cd();
+	  // Looper over the number of histograms
+	  gStyle->SetOptStat(kTRUE);
+	  for ( Int_t iHisto = 0; iHisto < histo.size(); iHisto++ )  histo[iHisto]->Write();
+	  delete fileOutPut;
+	  gStyle->SetOptStat(kFALSE);
+	}
+
 	file_name.str("");
       }
     }
@@ -573,6 +602,9 @@ void TagAndProbe_stacks () {
 //                   Here starts the fifth block                            //
 //                                                                          //
 //////////////////////////////////////////////////////////////////////////////
+
+//=================================================================================================
+//=================================================================================================
 void read_trees (vector <TFile*> f, vector <TTree*> &t ) {
   // This function reads trees from input ROOT
   // files into vectors of TTree's.
@@ -584,6 +616,8 @@ void read_trees (vector <TFile*> f, vector <TTree*> &t ) {
   }
 }
 
+//=================================================================================================
+//=================================================================================================
 void copy_trees ( vector <TTree*> old_tree, vector <TTree*> &new_tree, vector <string> events_selection ) {
   // This function creates new trees from old ones with and additional variable ("vertex_weight")
   // based on seleted pair of Tag & Probe muons.
@@ -600,13 +634,15 @@ void copy_trees ( vector <TTree*> old_tree, vector <TTree*> &new_tree, vector <s
     else {
       cout << endl << "*\t tree[" << i << "]\t";
 
-      new_tree.push_back( (TTree*)addNVtxWeight( old_tree, i, events_selection) );
+      new_tree.push_back( (TTree*)addNVtxWeight( old_tree, i, events_selection ) );
       cout << " Entries: " << new_tree[i]->GetEntries( events_selection[i].c_str() );
     }
   }
   cout << endl;
 }
 
+//=================================================================================================
+//=================================================================================================
 void events_per_bin ( vector <TTree*> t, vector <string> variable, vector <vector <double> > bin_edges,
 		      vector <string> selection_for_binning, vector <string> few_variables ) {
   // This function compute the number of entries
@@ -665,6 +701,8 @@ void events_per_bin ( vector <TTree*> t, vector <string> variable, vector <vecto
   }
 }
 
+//=================================================================================================
+//=================================================================================================
 void create_canvas (vector <TCanvas*> &c, vector <string> variable,
 		    Int_t width, Int_t height, Int_t j, Int_t index) {
   // This function sets the canvas concerning
@@ -685,7 +723,8 @@ void create_canvas (vector <TCanvas*> &c, vector <string> variable,
   gStyle->SetOptStat(kFALSE);
 }
 
-
+//=================================================================================================
+//=================================================================================================
 void create_pads (vector <TPad*> &pad, Int_t variable_order, vector <string> variable,
 		  Int_t pad_type, Float_t padXMin, Float_t padYMin, Float_t padXMax,
 		  Float_t padYMax, Int_t j) {
@@ -721,7 +760,8 @@ void create_pads (vector <TPad*> &pad, Int_t variable_order, vector <string> var
   pad_name.clear();
 }
 
-
+//=================================================================================================
+//=================================================================================================
 void fill_histograms ( vector <TTree*> t, vector <TH1F*> &h,
 		       vector <string> variable, vector <string> events_selection,
 		       vector <double> weights, vector <int> nBins, vector <double> xMin,
@@ -815,36 +855,118 @@ void fill_histograms ( vector <TTree*> t, vector <TH1F*> &h,
   //  h_temp.erase ( h_temp.begin(), h_temp.end() );
 } // End of "void fill_histograms()".
 
+//=================================================================================================
+//=================================================================================================
 Double_t normalization_factor ( vector <TH1F*> h ) {
   // This function compute integral of invariant mass distributions,
   // in the range between 60 and 120 GeV, for Data and MC events.
   // If requested by the USER, MC events are normalized by Data/MC ratio.
 
-  Double_t integral = 0.;
-  Double_t bin_min;
-  Double_t bin_max;
+  //  Double_t integral = 0.;
+  Double_t ratio = 0.;
+  Double_t bin_min = 0;
+  Double_t bin_max = 0;
+
+  TCanvas *canvas_normalization = new TCanvas("canvas_normalization", "canvas_normalization");
+  canvas_normalization->cd();
+  gStyle->SetOptStat(kFALSE);
+
+  TH1F *histo_normalization_Data   = new TH1F("histo_normalization_Data", "histo_normalization_Data",
+					      1000, 0., 3000.);
+  TH1F *histo_normalization_MC     = new TH1F("histo_normalization_MC"  , "histo_normalization_MC"  ,
+					      1000, 0., 3000.);
+  TH1F *histo_MC_normalized        = new TH1F("histo_MC_normalized"     , "histo_MC_normalized"     ,
+					      1000, 0., 3000.);
+
+  //  TF1 *fit_Data = new TF1("fit_Data", "expo(0)*gaus(0)*TMath::BreitWigner(x, [0], [1])", 60., 120.);
+  //  TF1 *fit_MC   = new TF1("fit_MC",   "expo(0)*gaus(0)*TMath::BreitWigner(x, [0], [1])", 60., 120.);
+
+  histo_normalization_Data->Add( h[0] );
+
+  // Loop over all MC samples and make a stack for the invariant mass
+  for ( Int_t j = 1; j < h.size(); j++ ) histo_normalization_MC->Add( h[j] );
+
+  histo_normalization_Data->GetYaxis()->SetTitle("Events");
+  histo_normalization_Data->GetXaxis()->SetTitle("M_{\mu\mu} [GeV/c^{2}]");
+  histo_normalization_Data->SetTitle("");
+  histo_normalization_Data->SetLineColor(1);
+  histo_normalization_Data->SetMarkerColor(1);
+  histo_normalization_Data->SetMarkerSize(0.7);
+  histo_normalization_Data->SetMarkerStyle(20);
+  histo_normalization_Data->Sumw2();
+
+  histo_normalization_MC->SetLineColor(2);
+  histo_normalization_MC->SetLineWidth(2);
+  histo_normalization_MC->SetLineStyle(2);
+
+
+  //  TFitResultPtr result_fit_Data = histo_normalization_Data->Fit("fit_Data", "S0");
+  //  TFitResultPtr result_fit_MC   = histo_normalization_MC->Fit(  "fit_MC"  , "S0");
+
+  cout << "*" << endl;
+  //  cout << "*\t* Integral from Data Fit(60, 120): " << fit_Data->Integral(60., 120.) << endl;
+  //  cout << "*\t* Integral from MC   Fit(60, 120): " << fit_MC->Integral(  60., 120.) << endl;
+
+  // MC scale factor is the ratio between integral in Data fit and integral in MC fit.
+  //  ratio = (double)fit_Data->Integral(60., 120.) / (double)fit_MC->Integral(60., 120.);
+  //  cout << "*\t* MC normalization factor: " << ratio << endl;
+
+  //  fit_Data->SetLineColor(4);
+  //  fit_Data->SetLineWidth(2);
+  //  fit_MC->SetLineColor(2);
+  //  fit_MC->SetLineWidth(2);
+
+  histo_normalization_Data->Draw("ep");
+  //  fit_Data->Draw("same");
+  //  fit_MC->Draw("same");
 
   for ( Int_t j = 1; j < h.size(); j++ ) {
     bin_min = h[j]->FindBin( 60 );
     bin_max = h[j]->FindBin( 120 );
-    integral = integral + ( h[j]->Integral( bin_min, bin_max ) );
+    ratio = ratio + ( h[j]->Integral( bin_min, bin_max ) );
     //    cout << ".... integral[" << j << "](" << bin_min << ", " << bin_max << "): " << integral << endl;
   }
 
-  if ( !(integral > 0) ) {
-    cout << "*\t\t ERROR: MC Integral = 0 !!!!!!!!!\n" << endl;
+  if ( !(ratio > 0) ) {
+    cout << "*\t\t ERROR: MC Integral = 0 when computing MC normalization!!!!!!!!!\n" << endl;
     gSystem->Exit(0);
   }
 
   bin_min = h[0]->FindBin( 60 );
   bin_max = h[0]->FindBin( 120 );
   //  cout << ".... integral[0](" << bin_min << ", " << bin_max << "): " << h[0]->Integral( bin_min, bin_max ) << endl;
-  integral = h[0]->Integral( bin_min, bin_max ) / integral;
-  cout << "*\t* MC normalization factor: " << integral << endl;
+  ratio = (double)h[0]->Integral( bin_min, bin_max ) / ratio;
+  cout << "*\t* MC Normalized by factor: " << ratio << endl;
 
-  return integral;
+
+  histo_MC_normalized->Add( histo_normalization_MC, (double)ratio );
+  histo_MC_normalized->SetLineColor(9);
+  histo_MC_normalized->SetLineWidth(2);
+  histo_MC_normalized->Draw("histo same");
+  histo_normalization_MC->Draw("histo same");
+
+  stringstream ScaleFactor;
+  ScaleFactor << "MC Normalized by factor: " << ratio;
+
+  TLegend *legend_normalization = new TLegend(0.5, 0.6, 0.88, 0.88);
+  legend_normalization->SetBorderSize(0);
+  legend_normalization->SetFillColor(0);
+  legend_normalization->AddEntry(histo_normalization_Data, "Data-RunC, 7.05 fb^{-1}", "lp");
+  legend_normalization->AddEntry(histo_normalization_MC,   "All MC Samples",          "l");
+  legend_normalization->AddEntry(histo_MC_normalized,      ScaleFactor.str().c_str(), "l");
+  //  legend_normalization->AddEntry(fit_Data,                 "Data Fit",                "l");
+  //  legend_normalization->AddEntry(fit_MC,                   "MC Fit",                  "l");
+  legend_normalization->Draw();
+
+  canvas_normalization->SaveAs("Data_MC_SF.png");
+  canvas_normalization->SaveAs("Data_MC_SF.pdf");
+  canvas_normalization->SaveAs("Data_MC_SF.root");
+
+  return ratio;
 }
 
+//=================================================================================================
+//=================================================================================================
 void setup_stack ( vector <THStack*> &h, vector <int> nBins,
 		   vector <double> xMin, vector <double> xMax,
 		   vector <double> yMin, vector <double> yMax,
@@ -881,7 +1003,9 @@ void setup_stack ( vector <THStack*> &h, vector <int> nBins,
   h_Name.clear();
 } // End of "void setup_stack()".
 
-void add_histo_in_stack ( vector <TH1F*> h, Double_t normalization,
+//=================================================================================================
+//=================================================================================================
+void add_histo_in_stack ( vector <TH1F*> &h, Double_t normalization,
 			  vector <THStack*> &h_Stack, Int_t index ) {
   // This add each component of the TH1F vector "h" in stack into
   // the THStack "h_Stack". It is added in descending order, so the the
@@ -904,6 +1028,8 @@ void add_histo_in_stack ( vector <TH1F*> h, Double_t normalization,
   cout << "*\t\t * Ratio Data/MC = " << (1.0*Data_integral)/stack_MC_integral << endl;
 }
 
+//=================================================================================================
+//=================================================================================================
 void create_legend ( vector <TLegend*> &l, vector <TH1F*> h, double xMin,
 		     double yMin, double xMax, double yMax,
 		     vector <string> label, int index ) {
@@ -921,7 +1047,8 @@ void create_legend ( vector <TLegend*> &l, vector <TH1F*> h, double xMin,
       l[index]->AddEntry(h[i], label[i].c_str(),"f");
 }
 
-
+//=================================================================================================
+//=================================================================================================
 void ratios ( vector <string> variable, vector <TH1F*> histo, Int_t j,
 	      Int_t ratio_type, TH1F* &h_ratio, vector <string> x_label ) {
   // This function takes care of two different Data vs. MC comparisions:
@@ -935,24 +1062,19 @@ void ratios ( vector <string> variable, vector <TH1F*> histo, Int_t j,
   // range and binning.
   h_ratio                    = (TH1F*)histo[0]->Clone( ratios_name.str().c_str() );
   TH1F *first_aux_histogram  = (TH1F*)histo[0]->Clone( ratios_name.str().c_str() );
-  TH1F *second_aux_histogram = (TH1F*)histo[0]->Clone( ratios_name.str().c_str() );
-
+  
   // Scale histograms to zero before starting to fill them
   h_ratio             ->Scale(0.); // This histogram will contain the final ratio
   first_aux_histogram ->Scale(0.); // This will be an auxiliar histogram
-  second_aux_histogram->Scale(0.); // This will be a second auxiliar histogram
-
+  
   // In case of Data/MC ratio
   if (ratio_type == 1) {
     // Auxiliar histograms are filled in order to have a stack of all MC samples
-    for ( Int_t ih = 1; ih < histo.size(); ih++ ) {
-      first_aux_histogram ->Add(histo[ih], second_aux_histogram, 1., 1.);
-      second_aux_histogram->Scale(0.);
-      second_aux_histogram->Add(first_aux_histogram);
-    }
+    for ( Int_t ih = 1; ih < histo.size(); ih++ )  first_aux_histogram ->Add( histo[ih] );
+
     // Finally, ratio is Data divided by stack of all MC samples
     h_ratio->Divide(histo[0], first_aux_histogram);
-
+    
     h_ratio->GetYaxis()->SetTitle( y_title2.c_str() );    // title in y axis
     h_ratio->GetYaxis()->SetTitleOffset(y_title_offset2); // distance of title from y axis
     h_ratio->GetYaxis()->SetTitleSize(y_titleSize2);      // size of title in y axis
@@ -962,11 +1084,9 @@ void ratios ( vector <string> variable, vector <TH1F*> histo, Int_t j,
   // In case of (Data - MC)/Data_uncertainty
   else if (ratio_type == 2) {
     // Auxiliar histograms are filled in order to have a stack of all MC samples
-    for ( Int_t ih = 1; ih < histo.size(); ih++ ) {
-      first_aux_histogram ->Add(histo[ih], second_aux_histogram, 1., 1.);
-      second_aux_histogram->Scale(0.);
-      second_aux_histogram->Add(first_aux_histogram);
-    }
+    first_aux_histogram->Scale(0.);
+    for ( Int_t ih = 1; ih < histo.size(); ih++ )  first_aux_histogram ->Add( histo[ih] );
+
     // Initialize Data_uncertainty ratio
     TH1F *h_uncertainty  = (TH1F*)histo[0]->Clone( ratios_name.str().c_str() );
     h_uncertainty->Scale(0.);

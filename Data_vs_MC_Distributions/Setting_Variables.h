@@ -57,8 +57,8 @@ string output_file_format[] = {"png", "pdf", "root"};
 
 //////////////////////////////////////////////////////////////////
 // If USER wants to save plots, provide a commom name.
-string output_file_name = "distribution_TP_ID_v15.1_BaselineSelections_v9";
-//string output_file_name = "distribution_TP_ID_v15.1_BaselineSelections_WithBestPair_v9";
+string output_file_name = "distribution_TP_ID_v17_BaselineSelections_v10";
+//string output_file_name = "distribution_TP_ID_v17_BaselineSelections_WithBestPair_v10";
 
 //////////////////////////////////////////////////////////////////
 // Would you like to get the entries per bin per input file per variable?
@@ -74,7 +74,7 @@ Int_t output_entries_per_bin = 0;
 // If "YES" ---> normalize = 2 (from User's pre-defined value)
 Int_t normalize            = 1;
 // In case of -> normalize = 2, User has to write bellow what is the MC normalization factor.
-Float_t User_normalization = 1.06019;
+Float_t User_normalization = 1.07839;
 
 //////////////////////////////////////////////////////////////////
 // Set legend position
@@ -147,52 +147,53 @@ string  y_title3        = "(Data-MC)/#sigma_{Data}"; // title of Y axis
 // on the top corresponds to the input root file 1, while the
 // histogram on the bottom corresponds to the last input root
 // file entry bellow.
-//============================[[ ROOT files with addBestPair_RunEvent_v9.cxx ]]===========================
+//============================[[ ROOT files with addBestPair_RunEvent_v10.cxx ]]===========================
 //============================[[ Information about selected events only      ]]===========================
 
 string input_files[] = {
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_Data_RunC__Mass_mu1_mu2__gt_0_GeV.root",       // root file 0 (Data)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_20_GeV.root",        // root file 1 (DY->MuMu M 20)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_120_GeV.root",       // root file 2 (DY->MuMu M 120)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_200_GeV.root",       // root file 3 (DY->MuMu M 200)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_500_GeV.root",       // root file 4 (DY->MuMu M 500)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_800_GeV.root",       // root file 5 (DY->MuMu M 800)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_1000_GeV.root",      // root file 6 (DY->MuMu M 1000)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_1500_GeV.root",      // root file 7 (DY->MuMu M 1500)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_2000_GeV.root",      // root file 8 (DY->MuMu M 2000)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_DY_tautau__Mass_tau__tau___gt_0_GeV.root",     // root file 9 (DY->TauTau M 20)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_ttbar__Mass_mu1_mu2__gt_0_GeV.root",           // root file 10 (ttbar)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_tW__Mass_mu1_mu2__gt_0_GeV.root",              // root file 11 (tW)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_tbarW__Mass_mu1_mu2__gt_0_GeV.root",           // root file 12 (tbarW)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_WW__Mass_mu1_mu2__gt_0_GeV.root",              // root file 13 (WW)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_WZ__Mass_mu1_mu2__gt_0_GeV.root",              // root file 14 (WZ)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_ZZ__Mass_mu1_mu2__gt_0_GeV.root",              // root file 15 (ZZ)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_W_Jets__Mass_mu1_mu2__gt_0_GeV.root",          // root file 16 (W+Jets->lnu)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_v9_Apr_02_2014/tnpZ_addBestPair_Inclusive_QCD__Mass_mu1_mu2__gt_0_GeV.root"    // root file 17 (Inclusive QCD)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_Data_RunC__Mass_mu1_mu2__gt_0_GeV.root",   // root file 0 (Data)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_20_GeV.root",    // root file 1 (DY->MuMu M 20)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_120_GeV.root",   // root file 2 (DY->MuMu M 120)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_200_GeV.root",   // root file 3 (DY->MuMu M 200)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_500_GeV.root",   // root file 4 (DY->MuMu M 500)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_800_GeV.root",   // root file 5 (DY->MuMu M 800)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_1000_GeV.root",  // root file 6 (DY->MuMu M 1000)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_1500_GeV.root",  // root file 7 (DY->MuMu M 1500)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_2000_GeV.root",  // root file 8 (DY->MuMu M 2000)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_tautau__Mass_tau__tau___gt_0_GeV.root", // root file 9 (DY->TauTau M 20)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_ttbar__Mass_mu1_mu2__gt_0_GeV.root",       // root file 10 (ttbar)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_tW__Mass_mu1_mu2__gt_0_GeV.root",          // root file 11 (tW)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_tbarW__Mass_mu1_mu2__gt_0_GeV.root",       // root file 12 (tbarW)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_WW__Mass_mu1_mu2__gt_0_GeV.root",          // root file 13 (WW)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_WZ__Mass_mu1_mu2__gt_0_GeV.root",          // root file 14 (WZ)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_ZZ__Mass_mu1_mu2__gt_0_GeV.root",          // root file 15 (ZZ)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_W_Jets__Mass_mu1_mu2__gt_0_GeV.root",      // root file 16 (W+Jets->lnu)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_Inclusive_QCD__Mass_mu1_mu2__gt_0_GeV.root"// root file 17 (Inclusive QCD)
 };
 
-//============================[[ ROOT files with addBestPair_RunEvent_v9.cxx            ]]================================
+
+//============================[[ ROOT files with addBestPair_RunEvent_v10.cxx            ]]================================
 //============================[[ Information about selected events + filtered T&P pairs ]]===========================
 /*
 string input_files[] = {
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_Data_RunC__Mass_mu1_mu2__gt_0_GeV.root",       // root file 0 (Data)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_20_GeV.root",        // root file 1 (DY->MuMu M 20)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_120_GeV.root",       // root file 2 (DY->MuMu M 120)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_200_GeV.root",       // root file 3 (DY->MuMu M 200)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_500_GeV.root",       // root file 4 (DY->MuMu M 500)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_800_GeV.root",       // root file 5 (DY->MuMu M 800)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_1000_GeV.root",      // root file 6 (DY->MuMu M 1000)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_1500_GeV.root",      // root file 7 (DY->MuMu M 1500)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_2000_GeV.root",      // root file 8 (DY->MuMu M 2000)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_DY_tautau__Mass_tau__tau___gt_0_GeV.root",     // root file 9 (DY->TauTau M 20)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_ttbar__Mass_mu1_mu2__gt_0_GeV.root",           // root file 10 (ttbar)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_tW__Mass_mu1_mu2__gt_0_GeV.root",              // root file 11 (tW)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_tbarW__Mass_mu1_mu2__gt_0_GeV.root",           // root file 12 (tbarW)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_WW__Mass_mu1_mu2__gt_0_GeV.root",              // root file 13 (WW)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_WZ__Mass_mu1_mu2__gt_0_GeV.root",              // root file 14 (WZ)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_ZZ__Mass_mu1_mu2__gt_0_GeV.root",              // root file 15 (ZZ)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_W_Jets__Mass_mu1_mu2__gt_0_GeV.root",          // root file 16 (W+Jets->lnu)
-  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_BaselineSelection_WithBestPair_v9_Apr_02_2014/tnpZ_addBestPair_Inclusive_QCD__Mass_mu1_mu2__gt_0_GeV.root"    // root file 17 (Inclusive QCD)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_Data_RunC__Mass_mu1_mu2__gt_0_GeV.root",       // root file 0 (Data)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_20_GeV.root",        // root file 1 (DY->MuMu M 20)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_120_GeV.root",       // root file 2 (DY->MuMu M 120)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_200_GeV.root",       // root file 3 (DY->MuMu M 200)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_500_GeV.root",       // root file 4 (DY->MuMu M 500)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_800_GeV.root",       // root file 5 (DY->MuMu M 800)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_1000_GeV.root",      // root file 6 (DY->MuMu M 1000)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_1500_GeV.root",      // root file 7 (DY->MuMu M 1500)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_2000_GeV.root",      // root file 8 (DY->MuMu M 2000)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_DY_tautau__Mass_tau__tau___gt_0_GeV.root",     // root file 9 (DY->TauTau M 20)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_ttbar__Mass_mu1_mu2__gt_0_GeV.root",           // root file 10 (ttbar)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_tW__Mass_mu1_mu2__gt_0_GeV.root",              // root file 11 (tW)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_tbarW__Mass_mu1_mu2__gt_0_GeV.root",           // root file 12 (tbarW)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_WW__Mass_mu1_mu2__gt_0_GeV.root",              // root file 13 (WW)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_WZ__Mass_mu1_mu2__gt_0_GeV.root",              // root file 14 (WZ)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_ZZ__Mass_mu1_mu2__gt_0_GeV.root",              // root file 15 (ZZ)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_W_Jets__Mass_mu1_mu2__gt_0_GeV.root",          // root file 16 (W+Jets->lnu)
+  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_WithBestPair_v10_Jun_08_2014/tnpZ_addBestPair_Inclusive_QCD__Mass_mu1_mu2__gt_0_GeV.root"    // root file 17 (Inclusive QCD)
 };
 */
 
@@ -230,7 +231,7 @@ string list_of_variables[] = {
   "pair_newTuneP_mass", //------------------> 4
   "tag_nVertices", //-----------------------> 5
   "pair_deltaR", //-------------------------> 6
-  "probe_tkRelIso", //----------------------> 7 //
+  "probe_tkRelIso", //----------------------> 7
   "combRelIsoPF04dBeta", //-----------------> 8
   "tag_combRelIsoPF04dBeta", //-------------> 9
   "innertkSigmaPtOverPt", //----------------> 10
@@ -241,7 +242,7 @@ string list_of_variables[] = {
   "tag_NewTuneP_phi", //--------------------> 15
   "NewTuneP_pt", //-------------------------> 16
   "tag_NewTuneP_pt", //---------------------> 17
-  "tag_MET", //-----------------------------> 18
+  "tag_MET10", //-----------------------------> 18
   "(TMath::Pi() - pair_collinearity1)", //--> 19
   "pair_DimuonVtxProbePtAtTheVtx", //-------> 20
   "pair_DimuonVtxTagPtAtTheVtx", //---------> 21
@@ -254,7 +255,7 @@ string list_of_variables[] = {
   "pair_dz", //-----------------------------> 28
   "(tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt)", //--> 29
   "tag_MT", //------------------------------> 30
-  "tag_METphi", //--------------------------> 31
+  "tag_METphi10", //--------------------------> 31
   "pair_DimuonVtxZcoordinateFromBS" //------> 32
 };
 
@@ -284,30 +285,33 @@ string mass_variable = "pair_newTuneP_mass";
 string mass_selection[] = {
   "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)", // root file 0  (Data)
   "(pair_newTuneP_mass >=   20.0) && (pair_newTuneP_mass <  120.0)", // root file 1  (DY->MuMu M 20)
+  //  "(pair_newTuneP_mass >=   20.0) && (pair_newTuneP_mass < 3000.0)", // root file 1  (DY->MuMu M 20)
   "(pair_newTuneP_mass >=  120.0) && (pair_newTuneP_mass <  200.0)", // root file 2  (DY->MuMu M 120)
   "(pair_newTuneP_mass >=  200.0) && (pair_newTuneP_mass <  500.0)", // root file 3  (DY->MuMu M 200)
   "(pair_newTuneP_mass >=  500.0) && (pair_newTuneP_mass <  800.0)", // root file 4  (DY->MuMu M 500)
   "(pair_newTuneP_mass >=  800.0) && (pair_newTuneP_mass < 1000.0)", // root file 5  (DY->MuMu M 800)
   "(pair_newTuneP_mass >= 1000.0) && (pair_newTuneP_mass < 1500.0)", // root file 6  (DY->MuMu M 1000)
   "(pair_newTuneP_mass >= 1500.0) && (pair_newTuneP_mass < 2000.0)", // root file 7  (DY->MuMu M 1500)
-  "(pair_newTuneP_mass >= 2000.0)",                                  // root file 8  (DY->MuMu M 2000)
-  "(pair_newTuneP_mass >=  20.0) && (pair_newTuneP_mass < 3000.0)", // root file 9  (DY->TauTau M 20)
-  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)", // root file 10 (ttbar)
-  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)", // root file 11 (tW)
-  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)", // root file 12 (tbarW)
-  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)", // root file 13 (WW)
-  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)", // root file 14 (WZ)
-  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)", // root file 15 (ZZ)
-  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)", // root file 16 (W+Jets->lnu)
-  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)"  // root file 17 (Inclusive QCD)
+  "(pair_newTuneP_mass >= 2000.0) && (pair_newTuneP_mass < 2000.0)", // root file 8  (DY->MuMu M 2000)
+  "(pair_newTuneP_mass >=  20.0) && (pair_newTuneP_mass < 3000.0)",  // root file 9  (DY->TauTau M 20)
+  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)",  // root file 10 (ttbar)
+  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)",  // root file 11 (tW)
+  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)",  // root file 12 (tbarW)
+  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)",  // root file 13 (WW)
+  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)",  // root file 14 (WZ)
+  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)",  // root file 15 (ZZ)
+  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)",  // root file 16 (W+Jets->lnu)
+  "(pair_newTuneP_mass >=   0.0) && (pair_newTuneP_mass < 3000.0)"   // root file 17 (Inclusive QCD)
 };
 
 //////////////////////////////////////////////////////////////////
 // Write the default event selections (with exception of mass).
-string default_selection = "(pair_passBaselineSelections == 1) && \
-(pair_DimuonVtxFitNormQui2 < 2.0) && \
-((tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt) > -0.4) && \
-((tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt) <  0.4)";
+string default_selection = "(charge != tag_charge) && (NewTuneP_eta > -2.4) && (NewTuneP_eta < 2.4) && \
+(tag_NewTuneP_eta > -2.1) && (tag_NewTuneP_eta < 2.1) && (tag_IsoMu24 == 1) && (pair_newTuneP_mass > 20.) && \
+(pair_DimuonVtxFitNormQui2 < 10.) && (tag_NewTuneP_pt > 45.) && (NewTuneP_pt > 45.) && (pair_dz > -0.05) && \
+(pair_dz < 0.05) && (tag_combRelIsoPF04dBeta < 0.12) && (pair_collinearity1 < (TMath::Pi() - 0.02)) && ((tkIso/NewTuneP_pt) < 0.1)";
+
+//(pair_passBaselineSelections == 1)";
 // && (tag_MET < 50.0) && \
 //(((tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt)) > -0.5) && \
 //(((tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt)) < 0.4)";
@@ -388,7 +392,7 @@ string x_axis_label[] = {
   "tag_NewTuneP_phi",
   "NewTuneP_pt",
   "tag_NewTuneP_pt",
-  "tag_MET",
+  "tag_MET10",
   "pair_collinearity1",
   "pair_DimuonVtxProbePtAtTheVtx",
   "pair_DimuonVtxTagPtAtTheVtx",
@@ -401,7 +405,7 @@ string x_axis_label[] = {
   "pair_dz",
   "p_{T} balance",
   "Transverse Mass [GeV]",
-  "#phi (MET) [rad]",
+  "#phi (MET10) [rad]",
   "pair_DimuonVtxZcoordinateFromBS"
 };
 
