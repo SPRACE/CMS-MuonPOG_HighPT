@@ -11,3 +11,12 @@ compute efficiencies directly from distributions created by
 Just run, on ACCESS or on you laptop (if having downloaded the input
 ROOT files):
      root -b -l -q ComputeEfficiencies.cpp
+
+It will compute efficiencies for the following cases
+   (1) Data    (apparent efficiency)
+   (2) Data    (final efficiency)
+   (3) All MC  (apparent efficiency)
+   (4) DY MC   (efficiency from signal)
+
+as well as the scale factor of ratio
+   SF = (1) / (3)
