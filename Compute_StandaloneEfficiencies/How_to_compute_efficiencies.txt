@@ -1,0 +1,13 @@
+####################################################################
+
+        Computing ID Efficiencies for Very High Pt Muons
+____________________________________________________________________
+
+Scrip
+	Compute_StandaloneEfficiencies/ComputeEfficiencies.cpp
+compute efficiencies directly from distributions created by
+	Data_vs_MC_Distributions/TagAndProbe_stacks.cpp
+
+Just run, on ACCESS or on you laptop (if having downloaded the input
+ROOT files):
+     root -b -l -q ComputeEfficiencies.cpp
