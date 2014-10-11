@@ -99,7 +99,7 @@
 #include "TSystem.h"
 #include "TString.h"
 
-#include "Setting_Variables.h"
+#include "Setting_Variables5.h"
 
 using namespace std;
 
@@ -189,7 +189,7 @@ void TagAndProbe_stacks () {
   cout << "*\t by the USER in the file Setting_Variables.h." << endl;
   cout << "*" << endl;
 
-  //  fill_bins (bin_edges);
+  fill_bins (bin_edges);
 
   cout << "*" << endl;
   cout << "*\t Applying common selection: " << default_selection.c_str() << endl;
@@ -483,7 +483,7 @@ void TagAndProbe_stacks () {
 
     /////////////////////////////////////////////////////////////
     // Data events will be draw above stacks.
-    histoStack[index]->Draw();
+    histoStack[index]->Draw("histo");
     histo[0]->Draw("ep same");
 
     /////////////////////////////////////////////////////////////
@@ -502,7 +502,7 @@ void TagAndProbe_stacks () {
 
     TH1F *DataMC_ratio;
     ratios (varName, histo, i, 1, DataMC_ratio, X_label);
-    DataMC_ratio->Draw("P");
+    DataMC_ratio->Draw("P E");
 
     TLine *line_DataMC_ratio = new TLine(xMin[i], 1.0, xMax[i], 1.0);
     line_DataMC_ratio->SetLineColor(line_color);
@@ -519,7 +519,7 @@ void TagAndProbe_stacks () {
 
     TH1F *pull;
     ratios (varName, histo, i, 2, pull, X_label);
-    pull->Draw("B");
+    pull->Draw("histo B");
 
     TLine *line_pull = new TLine(xMin[i], 0.0, xMax[i], 0.0);
     line_pull->SetLineColor(line_color);
@@ -538,7 +538,7 @@ void TagAndProbe_stacks () {
 	if ( linear_log_scale == 1 ) {
 	  if ( varName[i] == "(TMath::Pi() - pair_collinearity1)" )
 	    file_name << output_file_name << "_" << "pair_collinearity1" << "_log." << output_format[j];
-	  else if ( varName[i] == "(tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt)" )
+	  else if ( varName[i] == "TMath::Abs(tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt)" )
 	    file_name << output_file_name << "_" << "pt_balance" << "_log." << output_format[j];
 	  else
 	    file_name << output_file_name << "_" << varName[i] << "_log." << output_format[j];
@@ -546,7 +546,7 @@ void TagAndProbe_stacks () {
 	if ( linear_log_scale == 0 ) {
 	  if ( varName[i] == "(TMath::Pi() - pair_collinearity1)" )
 	    file_name << output_file_name << "_" << "pair_collinearity1" << "_log." << output_format[j];
-	  else if ( varName[i] == "(tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt)" )
+	  else if ( varName[i] == "TMath::Abs(tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt)" )
 	    file_name << output_file_name << "_" << "pt_balance" << "_log." << output_format[j];
 	  else
 	    file_name << output_file_name << "_" << varName[i] << "_linear." << output_format[j];
@@ -560,7 +560,7 @@ void TagAndProbe_stacks () {
 	  file_name.str("");
 	  if ( varName[i] == "(TMath::Pi() - pair_collinearity1)" )
 	    file_name << "Histograms_" << output_file_name << "_" << "pair_collinearity1.root";
-	  else if ( varName[i] == "(tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt)" )
+	  else if ( varName[i] == "TMath::Abs(tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt)" )
 	    file_name << "Histograms_" << output_file_name << "_" << "pt_balance.root";
 	  else
 	    file_name << "Histograms_" << output_file_name << "_" << varName[i] << ".root";
@@ -887,7 +887,7 @@ Double_t normalization_factor ( vector <TH1F*> h ) {
   for ( Int_t j = 1; j < h.size(); j++ ) histo_normalization_MC->Add( h[j] );
 
   histo_normalization_Data->GetYaxis()->SetTitle("Events");
-  histo_normalization_Data->GetXaxis()->SetTitle("M_{\mu\mu} [GeV/c^{2}]");
+  histo_normalization_Data->GetXaxis()->SetTitle("M_{#mu#mu} [GeV/c^{2}]");
   histo_normalization_Data->SetTitle("");
   histo_normalization_Data->SetLineColor(1);
   histo_normalization_Data->SetMarkerColor(1);
@@ -1070,8 +1070,13 @@ void ratios ( vector <string> variable, vector <TH1F*> histo, Int_t j,
   // In case of Data/MC ratio
   if (ratio_type == 1) {
     // Auxiliar histograms are filled in order to have a stack of all MC samples
-    for ( Int_t ih = 1; ih < histo.size(); ih++ )  first_aux_histogram ->Add( histo[ih] );
+    histo[0]->Sumw2();
+    for ( Int_t ih = 1; ih < histo.size(); ih++ ) {
+      histo[ih]->Sumw2();
+      first_aux_histogram ->Add( histo[ih] );
+    }
 
+    first_aux_histogram->Sumw2();
     // Finally, ratio is Data divided by stack of all MC samples
     h_ratio->Divide(histo[0], first_aux_histogram);
     
@@ -1099,6 +1104,7 @@ void ratios ( vector <string> variable, vector <TH1F*> histo, Int_t j,
     // Data and MC histograsm: (Data - MC)
     TH1F *third_aux_ratio = (TH1F*)histo[0]->Clone( ratios_name.str().c_str() );
     third_aux_ratio->Scale(0.);
+    histo[0]->Sumw2();
     third_aux_ratio->Add(histo[0], first_aux_histogram, 1., -1.);
 
     // Finally, ratio is (Data - MC)/Data_uncertainty
@@ -1137,6 +1143,8 @@ void ratios ( vector <string> variable, vector <TH1F*> histo, Int_t j,
 }
 
 
+//=================================================================================================
+//=================================================================================================
 // Function responsible for creating a weight variable based on the differences
 // between vertex multiplicity distributions between Data and MC samples.
 TTree* addNVtxWeight( vector <TTree*> trees, Int_t j, vector <string> cut ) {
@@ -1269,6 +1277,8 @@ TTree* addNVtxWeight( vector <TTree*> trees, Int_t j, vector <string> cut ) {
   return (TTree*)tOut->Clone( tree_name.str().c_str() );
 }
 
+//=================================================================================================
+//=================================================================================================
 void Avengers () {
   printf ("\n\n\n");
   printf ("                              .======== \n");
@@ -1301,9 +1311,9 @@ void Avengers () {
   printf ("    //  //          .. ... .... .... ... ..\n");
   printf ("   //  //                 ..  ...  ..\n");
   printf ("  ======\n");
-  printf ("\n\n\t\t\t\t \"If I cannot save my holiday,\n");
-  printf ("\t\t\t\t     will at least revenge it!\"\n\n");
-  printf ("\t\t\t\t\t\t      Avengers\n\n");
+  printf ("\n\n\t\t\t\t \"If I cannot save my holiday, will at least\n");
+  printf ("\t\t\t\t      revenge it, with an awesome job!\"\n\n");
+  printf ("\t\t\t\t\t\t      A. Santos\n\n");
 }
 
 /////////////////////////////////////////////////
