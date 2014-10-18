@@ -20,33 +20,44 @@ njets30Module = cms.EDProducer("CandCleanedMultiplicityCounter",
     minProbeObjDR = cms.double(0.3),
 )
 
+
 #########################################################################################
-##        Cesar/Angelo modules                                                         ##
+##        Cesar/Angelo modules                                                      ##
 #########################################################################################
 
 import MuonAnalysis.METProducer.metproducer_cfi
 
 MetModule = MuonAnalysis.METProducer.metproducer_cfi.demo.clone(
-        probes = cms.InputTag("tagMuons"),
-        objects = cms.InputTag("pfMet"),
+    probes = cms.InputTag("tagMuons"),
+    objects1 = cms.InputTag("pfMet"),
+    objects2 = cms.InputTag("pfMetT0rt"),
+    objects3 = cms.InputTag("pfMetT0rtT1"),
+    objects4 = cms.InputTag("pfMetT0pc"),
+    objects5 = cms.InputTag("pfMetT0pcT1"),
+    objects6 = cms.InputTag("pfMetT1"),
+    objects7 = cms.InputTag("pfMetT0rtTxy"),
+    objects8 = cms.InputTag("pfMetT0rtT1Txy"),
+    objects9 = cms.InputTag("pfMetT0pcTxy"),
+    objects10 = cms.InputTag("pfMetT0pcT1Txy"),
+    objects11 = cms.InputTag("pfMetT1Txy"),
 )
 
 DimuonVtxModule = cms.EDProducer("DimuonVtxProducer",
-        src = cms.InputTag("tpPairs"),
+    src = cms.InputTag("tpPairs"), 
 )
 
 patMuonsWithTriggerOurMuons = cms.EDProducer("NewTunePMuonsProducer",
-        src = cms.InputTag("patMuonsWithTrigger"),
-        vtx = cms.InputTag("offlinePrimaryVertices"),
+    src = cms.InputTag("patMuonsWithTrigger"),
+    vtx = cms.InputTag("offlinePrimaryVertices"), 
 )
 
 VetoCosmicMuonsModule = cms.EDProducer("VetoCosmicMuonsProducer",
-        src = cms.InputTag("tpPairs"),
+    src = cms.InputTag("tpPairs"), 
 )
 
 GenPVariablesModule = cms.EDProducer("GenPVariablesProducer",
-        src = cms.InputTag("tpPairs"),
-        obj = cms.InputTag("genParticles"),
+    src = cms.InputTag("tpPairs"),
+    obj = cms.InputTag("genParticles"),
 )
 
 #########################################################################################

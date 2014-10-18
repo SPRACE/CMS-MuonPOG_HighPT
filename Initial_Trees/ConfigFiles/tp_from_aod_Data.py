@@ -9,8 +9,8 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 100
 process.source = cms.Source("PoolSource", 
     fileNames = cms.untracked.vstring( ),
 )
-#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )    
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(500) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )    
+#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(500) )
 
 process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 process.load('Configuration.StandardSequences.MagneticField_AutoFromDBCurrent_cff')
@@ -19,13 +19,14 @@ process.load("Configuration.StandardSequences.Reconstruction_cff")
 
 import os
 if   "CMSSW_5_3_" in os.environ['CMSSW_VERSION']:
-#    process.GlobalTag.globaltag = cms.string('GR_P_V42_AN2::All')
-    process.GlobalTag.globaltag = cms.string('FT_53_V21_AN4::All')
+    ###process.GlobalTag.globaltag = cms.string('GR_P_V42_AN2::All')
+    ####process.GlobalTag.globaltag = cms.string('FT_53_V21_AN4::All')
+    process.GlobalTag.globaltag = cms.string('FT_R_53_V21::All')
     process.source.fileNames = [
         '/store/data/Run2012A//SingleMu/AOD/22Jan2013-v1/20000/FEC16A3C-8A70-E211-9AC8-1CC1DE040FE8.root',
         '/store/data/Run2012B/SingleMu//AOD/22Jan2013-v1/20001/FE31658E-8A72-E211-8661-20CF3027A596.root',
         '/store/data/Run2012C/SingleMu//AOD/22Jan2013-v1/20059/24C4169E-8D78-E211-B9E6-00259073E4AC.root',
-        '/store/data/Run2012D/SingleMu/AOD/22Jan2013-v1/10000/FE618190-93A7-E211-B50C-90E6BA19A215.root',       
+        '/store/data/Run2012D/SingleMu/AOD/22Jan2013-v1/10000/FE618190-93A7-E211-B50C-90E6BA19A215.root', 
 #        '/store/data/Run2012D/DoubleMu/AOD/PromptReco-v1/000/207/924/0A79B825-B339-E211-869D-BCAEC5364C93.root',
 #        '/store/data/Run2012D/DoubleMu/AOD/PromptReco-v1/000/207/924/3AB8635A-C339-E211-AD34-003048D2BC30.root',
 #        '/store/data/Run2012D/DoubleMu/AOD/PromptReco-v1/000/207/924/74791AB5-B639-E211-A2B4-0030486780B8.root',
@@ -74,6 +75,37 @@ process.noScraping = cms.EDFilter("FilterOutScraping",
     numtrack = cms.untracked.uint32(10),
     thresh = cms.untracked.double(0.25)
 )
+
+## ==== Cesar and Angelo - Begin ====
+
+process.load("RecoMET.METFilters.metFilters_cff")
+
+##____________________________________________________________________________||
+process.load("JetMETCorrections.Type1MET.correctionTermsCaloMet_cff")
+
+##____________________________________________________________________________||
+process.load("JetMETCorrections.Type1MET.correctionTermsPfMetType1Type2_cff")
+
+#process.corrPfMetType1.jetCorrLabel = cms.string("ak5PFL1FastL2L3")
+process.corrPfMetType1.jetCorrLabel = cms.string("ak5PFL1FastL2L3Residual")
+
+##____________________________________________________________________________||
+process.load("JetMETCorrections.Type1MET.correctionTermsPfMetType0PFCandidate_cff")
+
+##____________________________________________________________________________||
+process.load("JetMETCorrections.Type1MET.correctionTermsPfMetType0RecoTrack_cff")
+
+##____________________________________________________________________________||
+process.load("JetMETCorrections.Type1MET.correctionTermsPfMetShiftXY_cff")
+
+#process.corrPfMetShiftXY.parameter = process.pfMEtSysShiftCorrParameters_2012runABCDvsNvtx_mc
+process.corrPfMetShiftXY.parameter = process.pfMEtSysShiftCorrParameters_2012runABCDvsNvtx_data
+
+##____________________________________________________________________________||
+process.load("JetMETCorrections.Type1MET.correctedMet_cff")
+
+## ==== Cesar and Angelo - End ====
+
 
 process.load("HLTrigger.HLTfilters.triggerResultsFilter_cfi")
 
@@ -130,7 +162,7 @@ from MuonAnalysis.TagAndProbe.common_variables_cff import *
 process.load("MuonAnalysis.TagAndProbe.common_modules_cff")
 
 process.tagMuons = cms.EDFilter("PATMuonSelector",
-##    src = cms.InputTag("patMuonsWithTrigger"),
+    ##src = cms.InputTag("patMuonsWithTrigger"),
     src = cms.InputTag("patMuonsWithTriggerOurMuons"),
     cut = cms.string("pt > 20 && "+MuonIDFlags.Tight2012.value()+
                      " && !triggerObjectMatchesByCollection('hltL3MuonCandidates').empty()"+
@@ -144,17 +176,17 @@ if TRIGGER == "DoubleMu":
 process.oneTag  = cms.EDFilter("CandViewCountFilter", src = cms.InputTag("tagMuons"), minNumber = cms.uint32(1))
 
 process.probeMuons = cms.EDFilter("PATMuonSelector",
-##    src = cms.InputTag("patMuonsWithTrigger"),
-    src = cms.InputTag("patMuonsWithTriggerOurMuons"),
-    #cut = cms.string("track.isNonnull"),  # no real cut now
-    cut = cms.string("track.isNonnull && pt > 20"),
+    ##src = cms.InputTag("patMuonsWithTrigger"),
+    src = cms.InputTag("patMuonsWithTriggerOurMuons"),   
+    ##cut = cms.string("track.isNonnull"),  # no real cut now
+    cut = cms.string("track.isNonnull && pt > 20"), 
 )
 
 process.tpPairs = cms.EDProducer("CandViewShallowCloneCombiner",
     #cut = cms.string('60 < mass < 140 && abs(daughter(0).vz - daughter(1).vz) < 4'),
     #cut = cms.string('60 < mass && abs(daughter(0).vz - daughter(1).vz) < 4'),
     cut = cms.string('20 < mass && abs(daughter(0).vz - daughter(1).vz) < 4'),
-    #decay = cms.string('tagMuons@+ probeMuons@-'),
+    #decay = cms.string('tagMuons@+ probeMuons@-')
     decay = cms.string('tagMuons probeMuons'),
     checkCharge = cms.bool(False)
 )
@@ -173,8 +205,8 @@ process.tpTree = cms.EDAnalyzer("TagProbeFitTreeProducer",
     # probe variables: all useful ones
     variables = cms.PSet(
         AllVariables,
-    #    ExtraIsolationVariables,
-    #    MVAIsoVariablesPlain, 
+   #     ExtraIsolationVariables,
+   #     MVAIsoVariablesPlain, 
         isoTrk03Abs = cms.InputTag("probeMuonsIsoValueMaps","probeMuonsIsoFromDepsTk"),
         isoTrk03Rel = cms.InputTag("probeMuonsIsoValueMaps","probeMuonsRelIsoFromDepsTk"),
         dxyBS = cms.InputTag("muonDxyPVdzmin","dxyBS"),
@@ -184,7 +216,7 @@ process.tpTree = cms.EDAnalyzer("TagProbeFitTreeProducer",
         nSplitTk  = cms.InputTag("splitTrackTagger"),
         ###New Variables by Cesar and Angelo
         IsNewHPTmuon  = cms.string("userFloat('IsNewHPTmuonGlobal')"),
-        NewTuneP_pt = cms.string("userFloat('NEWTUNEPpt')"),
+        NewTuneP_pt = cms.string("userFloat('NEWTUNEPpt')"), 
         NewTuneP_ptRelError = cms.string("userFloat('NEWTUNEPptRelError')"),
         NewTuneP_eta = cms.string("userFloat('NEWTUNEPeta')"),
         NewTuneP_phi = cms.string("userFloat('NEWTUNEPphi')"),
@@ -214,10 +246,50 @@ process.tpTree = cms.EDAnalyzer("TagProbeFitTreeProducer",
         dzPV = cms.InputTag("muonDxyPVdzminTags","dzPV"),
         ###New Variables by Cesar and Angelo
         ##MET  = cms.InputTag("MetModule"),
-        MET     = cms.InputTag("MetModule", "MET"),
-        METx    = cms.InputTag("MetModule", "METx"),
-        METy    = cms.InputTag("MetModule", "METy"),
-        METphi  = cms.InputTag("MetModule", "METphi"),
+        MET1     = cms.InputTag("MetModule", "MET1"),
+        METx1    = cms.InputTag("MetModule", "METx1"),
+        METy1    = cms.InputTag("MetModule", "METy1"),
+        METphi1  = cms.InputTag("MetModule", "METphi1"),
+        MET2     = cms.InputTag("MetModule", "MET2"),
+        METx2    = cms.InputTag("MetModule", "METx2"),
+        METy2    = cms.InputTag("MetModule", "METy2"),
+        METphi2  = cms.InputTag("MetModule", "METphi2"),
+        MET3     = cms.InputTag("MetModule", "MET3"),
+        METx3    = cms.InputTag("MetModule", "METx3"),
+        METy3    = cms.InputTag("MetModule", "METy3"),
+        METphi3  = cms.InputTag("MetModule", "METphi3"),
+        MET4     = cms.InputTag("MetModule", "MET4"),
+        METx4    = cms.InputTag("MetModule", "METx4"),
+        METy4    = cms.InputTag("MetModule", "METy4"),
+        METphi4  = cms.InputTag("MetModule", "METphi4"),
+        MET5     = cms.InputTag("MetModule", "MET5"),
+        METx5    = cms.InputTag("MetModule", "METx5"),
+        METy5    = cms.InputTag("MetModule", "METy5"),
+        METphi5  = cms.InputTag("MetModule", "METphi5"),
+        MET6     = cms.InputTag("MetModule", "MET6"),
+        METx6    = cms.InputTag("MetModule", "METx6"),
+        METy6    = cms.InputTag("MetModule", "METy6"),
+        METphi6  = cms.InputTag("MetModule", "METphi6"),
+        MET7     = cms.InputTag("MetModule", "MET7"),
+        METx7    = cms.InputTag("MetModule", "METx7"),
+        METy7    = cms.InputTag("MetModule", "METy7"),
+        METphi7  = cms.InputTag("MetModule", "METphi7"),
+        MET8     = cms.InputTag("MetModule", "MET8"),
+        METx8    = cms.InputTag("MetModule", "METx8"),
+        METy8    = cms.InputTag("MetModule", "METy8"),
+        METphi8  = cms.InputTag("MetModule", "METphi8"),
+        MET9     = cms.InputTag("MetModule", "MET9"),
+        METx9    = cms.InputTag("MetModule", "METx9"),
+        METy9    = cms.InputTag("MetModule", "METy9"),
+        METphi9  = cms.InputTag("MetModule", "METphi9"),
+        MET10     = cms.InputTag("MetModule", "MET10"),
+        METx10    = cms.InputTag("MetModule", "METx10"),
+        METy10    = cms.InputTag("MetModule", "METy10"),
+        METphi10  = cms.InputTag("MetModule", "METphi10"),
+        MET11     = cms.InputTag("MetModule", "MET11"),
+        METx11    = cms.InputTag("MetModule", "METx11"),
+        METy11    = cms.InputTag("MetModule", "METy11"),
+        METphi11  = cms.InputTag("MetModule", "METphi11"),
         IsNewHPTmuon  = cms.string("userFloat('IsNewHPTmuonGlobal')"),
         NewTuneP_pt = cms.string("userFloat('NEWTUNEPpt')"),
         NewTuneP_ptRelError = cms.string("userFloat('NEWTUNEPptRelError')"),
@@ -240,19 +312,19 @@ process.tpTree = cms.EDAnalyzer("TagProbeFitTreeProducer",
         newTuneP_probe_trackType     = cms.InputTag("newTunePVals", "trackType"),
         newTuneP_mass                = cms.InputTag("newTunePVals", "mass"),
         ###New Variables by Cesar and Angelo
-        DimuonVtxFitNormQui2             = cms.InputTag("DimuonVtxModule", "vtxNormQui2"),
+	DimuonVtxFitNormQui2             = cms.InputTag("DimuonVtxModule", "vtxNormQui2"),
         DimuonVtxZcoordinate             = cms.InputTag("DimuonVtxModule", "vtxZcoordinate"),
         DimuonVtxZcoordinateFromBS       = cms.InputTag("DimuonVtxModule", "vtxZcoordinateFromBS"),
-        DimuonVtxRdistance               = cms.InputTag("DimuonVtxModule", "vtxRdistance"),
-        DimuonVtxRdistanceFromBS         = cms.InputTag("DimuonVtxModule", "vtxRdistanceFromBS"),
+        DimuonVtxRdistance               = cms.InputTag("DimuonVtxModule", "vtxRdistance"), 
+        DimuonVtxRdistanceFromBS         = cms.InputTag("DimuonVtxModule", "vtxRdistanceFromBS"), 
         DimuonVtxTagPtAtTheVtx           = cms.InputTag("DimuonVtxModule", "tagPtAtTheVtx"),
         DimuonVtxProbePtAtTheVtx         = cms.InputTag("DimuonVtxModule", "probePtAtTheVtx"),
         DimuonVtxTagPtBefore             = cms.InputTag("DimuonVtxModule", "tagPtBefore"),
         DimuonVtxProbePtBefore           = cms.InputTag("DimuonVtxModule", "probePtBefore"),
         collinearity1                = cms.InputTag("VetoCosmicMuonsModule", "collinearity1"),
         dx      = cms.string("daughter(0).vx - daughter(1).vx"),
-        dy      = cms.string("daughter(0).vy - daughter(1).vy"),
-        dxy     = cms.string(" sqrt( pow((daughter(0).vx - daughter(1).vx),2) + pow((daughter(0).vy - daughter(1).vy),2) ) "),
+        dy      = cms.string("daughter(0).vy - daughter(1).vy"),  
+        dxy     = cms.string(" sqrt( pow((daughter(0).vx - daughter(1).vx),2) + pow((daughter(0).vy - daughter(1).vy),2) ) "), 
     ),
     pairFlags = cms.PSet(
         BestZ = cms.InputTag("bestPairByZMass"),
@@ -287,7 +359,7 @@ process.tnpSimpleSequence = cms.Sequence(
     process.MetModule +
     process.DimuonVtxModule +
     process.VetoCosmicMuonsModule +
-    ### Cesar and Angelo End
+    ### Cesar and Angelo End 
     process.extraProbeVariablesSeq +
     process.l1rate +
     process.l1hltprescale + 
@@ -300,6 +372,26 @@ process.tnpSimpleSequence = cms.Sequence(
 
 process.tagAndProbe = cms.Path( 
     process.fastFilter +
+    ### Cesar and Angelo Begin
+    process.metFilters +
+    process.correctionTermsPfMetType1Type2 +
+    process.correctionTermsPfMetType0RecoTrack +
+    process.correctionTermsPfMetType0PFCandidate +
+    process.correctionTermsPfMetShiftXY +
+    process.correctionTermsCaloMet +
+    process.caloMetT1 + 
+    process.caloMetT1T2 + 
+    process.pfMetT0rt +
+    process.pfMetT0rtT1 +
+    process.pfMetT0pc +
+    process.pfMetT0pcT1 +
+    process.pfMetT0rtTxy +
+    process.pfMetT0rtT1Txy +
+    process.pfMetT0pcTxy +
+    process.pfMetT0pcT1Txy +
+    process.pfMetT1 +
+    process.pfMetT1Txy + 
+    ### Cesar and Angelo End
     process.mergedMuons                 *
     process.patMuonsWithTriggerSequence +
     ### Cesar and Angelo Begin
@@ -313,4 +405,6 @@ process.schedule = cms.Schedule(
 #   process.tagAndProbeSta, 
 )
 
+
+#process.TFileService = cms.Service("TFileService", fileName = cms.string("tnpZ_Data.root"))
 process.TFileService = cms.Service("TFileService", fileName = cms.string("tnpZ_HighMassDimuon.root"))
