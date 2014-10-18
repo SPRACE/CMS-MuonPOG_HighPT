@@ -1,0 +1,82 @@
+#setup a new release
+#check out several extra files
+cmsrel CMSSW_5_3_11_patch6
+cd CMSSW_5_3_11_patch6/src/
+cmsenv
+
+git cms-merge-topic -u TaiSakuma:53X-met-130910-01
+
+#copy from your area the code for T&P
+#IMPORTANT: Do not forget to do "scram b clean" in your code with the T&P before copying to the new release
+
+cp -rf ../../CMSSW_5_3_10/src/MuonAnalysis/ .
+cp -rf ../../CMSSW_5_3_10/src/PhysicsTools/ .
+
+scram build -j 9
+
+##After, go to
+cd MuonAnalysis/METProducer/src/
+##copy and compile
+cp /afs/cern.ch/work/c/caber/public/FilesForAngelo/MET_Filters_Corrections/METProducer.cc METProducer.cc
+scram b
+##go to and copy
+cd MuonAnalysis/TagAndProbe/python/
+cp /afs/cern.ch/work/c/caber/public/FilesForAngelo/MET_Filters_Corrections/common_modules_cff.py common_modules_cff.py
+##remove the compiled python
+rm MuonAnalysis/TagAndProbe/python/common_modules_cff.pyc
+
+##go to
+cd MuonAnalysis/TagAndProbe/test/zmumu/
+cp /afs/cern.ch/work/c/caber/public/FilesForAngelo/MET_Filters_Corrections/tp_from_aod_Data.py tp_from_aod_Data.py
+cp /afs/cern.ch/work/c/caber/public/FilesForAngelo/MET_Filters_Corrections/tp_from_aod_MC.py tp_from_aod_MC.py
+##remove compiled stuffs
+rm tp_from_aod_Data.pyc
+rm tp_from_aod_MC.pyc
+
+
+###test the code
+##copy the ttbar mc file below (only 100 events)
+edmCopyPickMerge \
+  inputFiles=/store/mc/Summer12_DR53X/TTJets_MassiveBinDECAY_TuneZ2star_8TeV-madgraph-tauola/AODSIM/PU_S10_START53_V7A-v1/0000/FED775BD-B8E1-E111-8ED5-003048C69036.root \
+  outputFile=TTJets_AODSIM_532.root \
+  maxEvents=100 
+
+##uncomment the lines in "tp_from_aod_MC.py"
+
+eventsToProcess = cms.untracked.VEventRange("1:34734:10417901","1:34734:10417902")
+
+cut = cms.string("pt > 0.0")
+
+#and comment
+
+cut = cms.string("pt > 20 && "+MuonIDFlags.Tight2012.value()+
+                     " && !triggerObjectMatchesByCollection('hltL3MuonCandidates').empty()"+
+                     " && pfIsolationR04().sumChargedHadronPt/pt < 0.2"),
+
+#and uncomment the lines below in "MuonAnalysis/METProducer/src/METProducer.cc"
+
+/*std::cout<<"(MET Type, pt, px, py, phi)"<<std::endl;
+   std::cout<<"( pfMet,           "<< met1 << ", "<< metx1 << ", "<< mety1 << ", "<< metphi1 <<" )" << std::endl;
+   std::cout<<"( pfMetT0rt,       "<< met2 << ", "<< metx2 << ", "<< mety2 << ", "<< metphi2 <<" )" << std::endl;
+   std::cout<<"( pfMetT0rtT1,     "<< met3 << ", "<< metx3 << ", "<< mety3 << ", "<< metphi3 <<" )" << std::endl;
+   std::cout<<"( pfMetT0pc,       "<< met4 << ", "<< metx4 << ", "<< mety4 << ", "<< metphi4 <<" )" << std::endl;
+   std::cout<<"( pfMetT0pcT1,     "<< met5 << ", "<< metx5 << ", "<< mety5 << ", "<< metphi5 <<" )" << std::endl;
+   std::cout<<"( pfMetT1,         "<< met6 << ", "<< metx6 << ", "<< mety6 << ", "<< metphi6 <<" )" << std::endl;
+   std::cout<<"( pfMetT0rtTxy,    "<< met7 << ", "<< metx7 << ", "<< mety7 << ", "<< metphi7 <<" )" << std::endl;
+   std::cout<<"( pfMetT0rtT1Txy,  "<< met8 << ", "<< metx8 << ", "<< mety8 << ", "<< metphi8 <<" )" << std::endl;
+   std::cout<<"( pfMetT0pcTxy,    "<< met9 << ", "<< metx9 << ", "<< mety9 << ", "<< metphi9 <<" )" << std::endl;
+   std::cout<<"( pfMetT0pcT1Txy,  "<< met10 << ", "<< metx10 << ", "<< mety10 << ", "<< metphi10 <<" )" << std::endl;
+   std::cout<<"( pfMetT1Txy,      "<< met11 << ", "<< metx11 << ", "<< mety11 << ", "<< metphi11 <<" )" << std::endl; */
+
+#and compile
+
+***IMPORTANT: Please, do not forget in the final to maintain un/commented/compiled the original parts!!!This is just a test...
+
+##then, do
+
+cmsRun tp_from_aod_MC.py
+
+##the output printed in the screen should to be compatible with the last (green)table in the link below
+
+https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuideCMSDataAnalysisSchool2014METExerciseFNAL
+
