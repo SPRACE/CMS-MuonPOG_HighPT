@@ -1,13 +1,16 @@
 #######################################################################################
-# VERSION v4, April 01 2014
+# VERSION v5, June 14 2014
 # _____________________________________________________________________________________
 #
 # Versions:
+#   - v5:
+#        * comes from version v4;
+#        * includes vertex multiplity weight into new Trees.
 #   - v4:
 #        * comes from version v3;
 #        * adding variables to handle with new ROOT macro file, which requires that good
 #          T&P pairs are those ones with the Chi2/NDF closest to 1;
-#        * no longer analyzes if Tag becomes Probe and vice-versa, allowing have more than
+#        * no longer analyze if Tag becomes Probe and vice-versa, allowing have more than
 #          one pair per event;
 #        * now User can pass input paramenters via command line to choose if wanting to
 #          label T&P pairs concering their Chi2/NDF, as well as if wanting to select events
@@ -27,7 +30,7 @@
 # the code and will gather all results which arrive from CONDOR.
 #
 # In CONDOR, the ROOT macro file will run in this way:
-#          root -b -l -q 'macro.cxx("dataset_definition", "dataset_path", debug, create_new_root)'
+#          root -b -l -q 'addBestPair_RunEvent_v10.xx("dataset_definition", "dataset_path", debug, create_new_root, choose_pair, create_selection_variable)'
 #
 # This ROOT macro takes into account the selections of events defined here by the USER.
 # If chosen by the USER, a new ROOT file is created containing a new variable called
@@ -98,15 +101,15 @@ import sys
 #                        - tag_MET
 #                        - tag_METphi
 #                        Example: "((charge*tag_charge < 0) && (NewTuneP_pt > 15.))"
-#                        In case of needing more variables, add them accordingly into
+#                        In case of needing more variables, add them accordingly the
 #                        the ROOT_macro_file.
 #######################################################################################
 debug              = 1
-new_folder         = 0
+new_folder         = 1
 choose_pair        = 0
 select_events      = 1
-ROOT_macro_file    = "addBestPair_RunEvent.cxx"
-TP_pair_selections = "(charge != tag_charge) && (NewTuneP_eta > -2.4) && (NewTuneP_eta < 2.4) && (tag_NewTuneP_eta > -2.1) && (tag_NewTuneP_eta < 2.1) && (tag_IsoMu24 == 1) && (pair_newTuneP_mass > 20.) && (pair_DimuonVtxFitNormQui2 < 10.) && (tag_NewTuneP_pt > 45.) && (NewTuneP_pt > 45.) && (pair_dz > -0.2) && (pair_dz < 0.2) && (tag_combRelIsoPF04dBeta < 0.12) && (tag_innertrackPtRelError < 0.1) && (pair_collinearity1 < cosmics) && ((tkIso/NewTuneP_pt) < 0.1)"
+ROOT_macro_file    = "addBestPair_RunEvent_v11.cxx"
+TP_pair_selections = "(charge != tag_charge) && (NewTuneP_eta > -2.4) && (NewTuneP_eta < 2.4) && (tag_NewTuneP_eta > -2.1) && (tag_NewTuneP_eta < 2.1) && (tag_IsoMu24 == 1) && (pair_newTuneP_mass >= 60.) && (pair_DimuonVtxFitNormQui2 <= 1.0) && (tag_NewTuneP_pt > 45.) && (NewTuneP_pt > 45.) && (pair_dz > -0.05) && (pair_dz < 0.05) && (tag_combRelIsoPF04dBeta < 0.12) && (pair_collinearity1 < (TMath::Pi() - 0.02)) && ((tkIso/NewTuneP_pt) < 0.1) && (tag_MET10 < 50.) && ((TMath::Abs(tag_NewTuneP_pt - NewTuneP_pt) / (tag_NewTuneP_pt + NewTuneP_pt)) < 0.4)"
 
 
 #######################################################################################
@@ -117,26 +120,45 @@ TP_pair_selections = "(charge != tag_charge) && (NewTuneP_eta > -2.4) && (NewTun
 # The paths to the input ROOT files should be those ones in "DCASH"
 #######################################################################################
 root_files = [
-    ("Data-RunC",     "m(mu1, mu2) > 0 GeV",    73100236, "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_SingleMuRun2012C_22Jan2013_v1_31Mar2014.root"),
-    ("DY->mumu",      "m(mu1, mu2) > 20 GeV",   4817072,  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_DYToMuMu_M-20_CT10_TuneZ2star_8TeV-powheg-pythia6_v1_31Mar2014.root"),
-### [[[ It's version 2 ]]]]--->    ("DY->mumu",      "m(mu1, mu2) > 20 GeV",   71411027, "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Dec_26_2013/tnpZ_M_20_withNVtxWeights_v2.root"),
-    ("DY->mumu",      "m(mu1, mu2) > 120 GeV",  265550,   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_DYToMuMu_M-120_CT10_TuneZ2star_8TeV-powheg-pythia6_v1_31Mar2014.root"),
-    ("DY->mumu",      "m(mu1, mu2) > 200 GeV",  309663,   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_DYToMuMu_M-200_CT10_TuneZ2star_8TeV-powheg-pythia6_v1_31Mar2014.root"),
-    ("DY->mumu",      "m(mu1, mu2) > 500 GeV",  379473,   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_DYToMuMu_M-500_CT10_TuneZ2star_8TeV-powheg-pythia6_v1_31Mar2014.root"),
-    ("DY->mumu",      "m(mu1, mu2) > 800 GeV",  408182,   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_DYToMuMu_M-800_CT10_TuneZ2star_8TeV-powheg-pythia6_v1_31Mar2014.root"),
-    ("DY->mumu",      "m(mu1, mu2) > 1000 GeV", 419382,   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_DYToMuMu_M-1000_CT10_TuneZ2star_8TeV-powheg-pythia6_v1_31Mar2014.root"),
-    ("DY->mumu",      "m(mu1, mu2) > 1500 GeV", 436012,   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_DYToMuMu_M-1500_CT10_TuneZ2star_8TeV-powheg-pythia6_v1_31Mar2014.root"),
-    ("DY->mumu",      "m(mu1, mu2) > 2000 GeV", 441181,   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_DYToMuMu_M-2000_CT10_TuneZ2star_8TeV-powheg-pythia6_v1_31Mar2014.root"),
-    ("DY->tautau",    "m(tau+, tau-) > 0 GeV",  222238,   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_DYToTauTau_M-20_CT10_TuneZ2star_8TeV-powheg-pythia6_v1_31Mar2014.root"),
-    ("ttbar",         "m(mu1, mu2) > 0 GeV",    11837860, "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_TT_CT10_TuneZ2star_8TeV-powheg-tauola_v1_31Mar2014.root"),
-    ("tW",            "m(mu1, mu2) > 0 GeV",    234414,   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_T_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola_v1_31Mar2014.root"),
-    ("tbarW",         "m(mu1, mu2) > 0 GeV",    227851,   "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_Tbar_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola_v1_31Mar2014.root"),
-    ("WW",            "m(mu1, mu2) > 0 GeV",    2643186,  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_WW_TuneZ2star_8TeV_pythia6_tauola_v1_31Mar2014.root"),
-    ("WZ",            "m(mu1, mu2) > 0 GeV",    2511807,  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_WZ_TuneZ2star_8TeV_pythia6_tauola_v1_31Mar2014.root"),
-    ("ZZ",            "m(mu1, mu2) > 0 GeV",    2592869,  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_ZZ_TuneZ2star_8TeV_pythia6_tauola_v1_31Mar2014.root"),
-    ("W+Jets",        "m(mu1, mu2) > 0 GeV",    4117043,  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_WJetsToLNu_TuneZ2Star_8TeV-madgraph-tarball_v1_31Mar2014.root"),
-    ("Inclusive-QCD", "m(mu1, mu2) > 0 GeV",    5213103,  "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_QCD_Pt_20_MuEnrichedPt_15_TuneZ2star_8TeV_pythia6_v1_31Mar2014.root"),
-    ("DY+Jets->ll",   "m(mu1, mu2) > 0 GeV",    23611226, "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/HighMassDimuonEff_WithVertexReweighting_Mar_31_2014/tnpZ_DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph_v1_31Mar2014.root"),
+    ("Data-RunC",     "m(mu1, mu2) > 0 GeV", "(pair_newTuneP_mass > 0.)", 73100236,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_Data_RunC__Mass_mu1_mu2__gt_0_GeV.root"),
+    ("DY->mumu",      "m(mu1, mu2) > 20 GeV", "(pair_newTuneP_mass >= 20.) && (pair_newTuneP_mass < 120.)", 4817072,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_20_GeV.root"),
+### [[[ It's version 2 ]]]]--->    ("DY->mumu",      "m(mu1, mu2) > 20 GeV",   71411027, ""),
+    ("DY->mumu",      "m(mu1, mu2) > 120 GeV", "(pair_newTuneP_mass >= 120.) && (pair_newTuneP_mass < 200.)", 265550,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_120_GeV.root"),
+    ("DY->mumu",      "m(mu1, mu2) > 200 GeV", "(pair_newTuneP_mass >= 200.) && (pair_newTuneP_mass < 500.)", 309663,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_200_GeV.root"),
+    ("DY->mumu",      "m(mu1, mu2) > 500 GeV", "(pair_newTuneP_mass >= 500.) && (pair_newTuneP_mass < 800.)", 379473,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_500_GeV.root"),
+    ("DY->mumu",      "m(mu1, mu2) > 800 GeV", "(pair_newTuneP_mass >= 800.) && (pair_newTuneP_mass < 1000.)", 408182,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_800_GeV.root"),
+    ("DY->mumu",      "m(mu1, mu2) > 1000 GeV", "(pair_newTuneP_mass >= 1000.) && (pair_newTuneP_mass < 1500.)", 419382,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_1000_GeV.root"),
+    ("DY->mumu",      "m(mu1, mu2) > 1500 GeV", "(pair_newTuneP_mass >= 1500.) && (pair_newTuneP_mass < 2000.)", 436012,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_1500_GeV.root"),
+    ("DY->mumu",      "m(mu1, mu2) > 2000 GeV", "(pair_newTuneP_mass >= 2000.) && (pair_newTuneP_mass < 3000.)", 441181,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_mumu__Mass_mu1_mu2__gt_2000_GeV.root"),
+    ("DY->tautau",    "m(tau+, tau-) > 0 GeV", "(pair_newTuneP_mass > 0.)", 222238,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_tautau__Mass_tau__tau___gt_0_GeV.root"),
+    ("ttbar",         "m(mu1, mu2) > 0 GeV", "(pair_newTuneP_mass > 0.)", 11837860,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_ttbar__Mass_mu1_mu2__gt_0_GeV.root"),
+    ("tW",            "m(mu1, mu2) > 0 GeV", "(pair_newTuneP_mass > 0.)", 234414,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_tW__Mass_mu1_mu2__gt_0_GeV.root"),
+    ("tbarW",         "m(mu1, mu2) > 0 GeV", "(pair_newTuneP_mass > 0.)", 227851,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_tbarW__Mass_mu1_mu2__gt_0_GeV.root"),
+    ("WW",            "m(mu1, mu2) > 0 GeV", "(pair_newTuneP_mass > 0.)", 2643186,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_WW__Mass_mu1_mu2__gt_0_GeV.root"),
+    ("WZ",            "m(mu1, mu2) > 0 GeV", "(pair_newTuneP_mass > 0.)", 2511807,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_WZ__Mass_mu1_mu2__gt_0_GeV.root"),
+    ("ZZ",            "m(mu1, mu2) > 0 GeV", "(pair_newTuneP_mass > 0.)", 2592869,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_ZZ__Mass_mu1_mu2__gt_0_GeV.root"),
+    ("W+Jets",        "m(mu1, mu2) > 0 GeV", "(pair_newTuneP_mass > 0.)", 4117043,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_W_Jets__Mass_mu1_mu2__gt_0_GeV.root"),
+    ("Inclusive-QCD", "m(mu1, mu2) > 0 GeV", "(pair_newTuneP_mass > 0.)", 5213103,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_Inclusive_QCD__Mass_mu1_mu2__gt_0_GeV.root"),
+    ("DY+Jets->ll",   "m(mu1, mu2) > 0 GeV", "(pair_newTuneP_mass > 0.)", 23611226,
+     "dcap://osg-se.sprace.org.br:/pnfs/sprace.org.br/data/cms/store/user/adesouza/MuonPOG/BaselineSelection_v10_Jun_08_2014/tnpZ_addBestPair_DY_Jets_ll__Mass_mu1_mu2__gt_0_GeV.root"),
     ]
 
 
@@ -236,7 +258,7 @@ def create_script2( output, folder ):
 #######################################################################################
 # This function creates a script which runs inside CONDOR's nodes
 #######################################################################################
-def create_script3( output, folder, definition, path, debug, new_folder ):
+def create_script3( dataset_type, selection_of_pairs, data_path, output, folder, definition, path, debug, new_folder ):
     output.write("#!/bin/bash\n")
     output.write("\n")
     output.write("echo \"Host name: `hostname`\"\n")
@@ -271,7 +293,11 @@ def create_script3( output, folder, definition, path, debug, new_folder ):
     output.write("\n")
     output.write("echo \"==========================\"\n")
     output.write("echo \"Running macro file\"\n")
-    output.write("root -b -l -q '"+ROOT_macro_file+"(\""+definition+"\", \""+path+"\", "+str(debug)+", "+str(new_folder)+", "+str(choose_pair)+", "+str(select_events)+")'\n")
+    selecting_pairs = TP_pair_selections+" && "+selection_of_pairs
+    if "Data" in dataset_type:
+        output.write("root -b -l -q '"+ROOT_macro_file+"(\"Data\", \""+definition+"\", \""+path+"\", "+"\""+data_path+"\", "+str(debug)+", "+str(new_folder)+", "+str(choose_pair)+", "+str(select_events)+", \""+selecting_pairs+"\")'\n")
+    else:
+        output.write("root -b -l -q '"+ROOT_macro_file+"(\"MC\", \""+definition+"\", \""+path+"\", "+"\""+data_path+"\", "+str(debug)+", "+str(new_folder)+", "+str(choose_pair)+", "+str(select_events)+", \""+selecting_pairs+"\")'\n")
     output.write("ls -lsh\n")
     output.write("\n")
     output.write("mkdir  Results\n")
@@ -297,7 +323,7 @@ def create_script3( output, folder, definition, path, debug, new_folder ):
 #######################################################################################
 # This function apply selections to the Tag and Probe pairs in the macro file
 #######################################################################################
-def apply_selections( macro_file_name ):
+def apply_selections( macro_file_name, selection_of_pairs ):
     tmp_file_name = "tmp_macro_file.txt"
     tmp_file = open( tmp_file_name, "w" )
 
@@ -307,7 +333,8 @@ def apply_selections( macro_file_name ):
     # The only different line is that one correspondent to the selections chosen by the USER.
     for line in macro_file:
         if "===>>>" in line:
-            newline = "        if ("+TP_pair_selections+") { //===>>> Apply general selections here\n"
+            selecting_pairs = TP_pair_selections+" && "+selection_of_pairs
+            newline = "        if ("+selecting_pairs+") { //===>>> Apply general selections here\n"
             tmp_file.write(newline)
         else:
             tmp_file.write(line)
@@ -354,12 +381,11 @@ def main():
     # Moving to the new directory
     os.chdir( directory )
 
-    # Apply the correct selections of Tag and Probe pairs to the macro file
-    apply_selections( ROOT_macro_file )
-
-
     # Looping over all ROOT files
-    for dataset_definition, mass_window, nEvents, dataset_path in root_files:
+    for dataset_definition, mass_window, selection_of_pairs, nEvents, dataset_path in root_files:
+        # Apply the correct selections of Tag and Probe pairs to the macro file
+        apply_selections( ROOT_macro_file, selection_of_pairs )
+
         # Creating a new directory w.r.t. each ROOT file.
         output_folder = "DataSet_"+dataset_definition+"_"+mass_window
 
@@ -388,7 +414,7 @@ def main():
 
         outputFile = open("TagAndProbe.sh", "w")
         # This function creates a script which runs inside CONDOR's nodes
-        create_script3( outputFile, output_folder, dataset_definition+" - "+mass_window, dataset_path, debug, new_folder )
+        create_script3( dataset_definition, selection_of_pairs, root_files[0][4], outputFile, output_folder, dataset_definition+" - "+mass_window, dataset_path, debug, new_folder )
         bash_via_python( "chmod 755 "+outputFile.name )
         outputFile.close()
 

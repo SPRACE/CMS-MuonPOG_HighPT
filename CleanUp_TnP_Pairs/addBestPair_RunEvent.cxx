@@ -1,7 +1,17 @@
 /******************************************************************************
 
-    Version v9: Mar, 1st, 2014
+    Version v11: Jun, 14th, 2014
     __________________________
+    - Version v11: comes up from version 10
+          - Include variable "weight", which takes care of agreement of vertex
+            multiplicity between Data and MC.
+          - Function "compute_weights" is added to compute such weights.
+
+    - Version v10: comes up from version 9
+          - Most part of events happens with a Chi2/NDF approaching to "0",
+            instead of approaching to "1". In this version, the best T&P pair,
+            of a event, is that one with Chi2/NDF closest to 0.
+          - It made the code simpler than previous versions.
 
     - Version v9: comes up from version 8
           - Clean up of T&P pairs is done only requiring pairs with the Chi2/NDF
@@ -17,14 +27,15 @@
             line) a possibility of either encompassing or not the User's pre-defined
             selections into variable "pair_passBaselineSelections".
           - Now, this macro has to be run in the way:
-              root -b -l -q 'addBestPair_RunEvent.cxx("dataset_definition", "dataset_path", debug, create_new_root, choose_pair, create_selection_variable)'
+              root -b -l -q 'addBestPair_RunEvent.cxx("dataset_definition", "dataset_path", debug, create_new_root, choose_pair, create_selection_variable, "selected_cuts")'
             where:
               - dataset_definition: is a string defining the data set input file;
               - dataset_path: is the path to the input ROOT file;
               - debug: 1 (0) in case of (not) wanting to debug the code;
               - create_new_root: 1 (0) in case of (not) wanting to create a new;
               - choose_pair: 1 (0) in case of (not) wanting to choose a best T&P pair;
-              - create_selection_variable: 1 (0) in case of (not) wanting to encompass selections.
+              - create_selection_variable: 1 (0) in case of (not) wanting to encompass selections;
+              - selected_cuts: selection cuts.
 
     - Version v8: comes up from version 7
           - change variable "pair_passBaselineSelections" from type Bool_t to Int_t.
@@ -74,10 +85,12 @@
     respectively.
 
     Run this macro in this way:
-          root -b -l -q 'addBestPair_RunEvent.cxx("dataset_definition", "dataset_path", debug, create_new_root)'
+          root -b -l -q 'addBestPair_RunEvent.cxx("dataset_type", "dataset_definition", "dataset_path", "Data_dataset_path", debug, create_new_root)'
     where:
+          - dataset_type: type of data set (Data or MC)
           - dataset_definition: is a string defining the data set input file;
           - dataset_path: is the path to the input ROOT file;
+          - Data_dataset_path: is the path to the Data input ROOT file;
           - debug: 1 (0) in case of (not) wanting to debug the code;
           - create_new_root: 1 (0) in case of (not) wanting to create a new
             ROOT file with newest variable.
@@ -132,34 +145,45 @@
 #include <typeinfo>
 
 using namespace std;
-#define NUMBER_OF_ARRAYS 100 // This number may be lower but need caution when decreasing it
+#define NUMBER_OF_ARRAYS 100 // This number may be lower but need caution when changing it
 
 // =================================================================================================
 void addBestPair_RunEvent () {
   cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
   cout << "\t ERROR: the correct way to use this macro is" << endl;
-  cout << "\t\t root -b -l -q \'addBestPair_RunEvent.cxx(\"dataset_definition\", \"dataset_path\", \
-debug, create_new_root, choose_pair, create_selection_variable)\'" << endl;
+  cout << "\t\t root -b -l -q \'addBestPair_RunEvent.cxx(\"dataset_type\", \"dataset_definition\", \
+\"dataset_path\", \"Data_dataset_path\", debug, create_new_root, choose_pair, create_selection_variable, \
+\"selected_cuts\")\'" << endl;
   cout << "\t where" << endl;
+  cout << "\t - dataset_type: is type of data set (Data or MC)" << endl;
   cout << "\t - dataset_definition: is a string defining the data set of the input file;" << endl;
   cout << "\t - dataset_path: is a string showing the path to the input ROOT file;" << endl;
+  cout << "\t - Data_dataset_path: is a string showing the path to the Data input ROOT file" << endl;
   cout << "\t - debug: 1 (0) in case of (not) wanting to debug the code;" << endl;
   cout << "\t - create_new_root: 1 (0) in case of (not) wanting to create a new ROOT file with \
 the newest variables." << endl;
   cout << "\t - choose_pair: 1 (0) in case of (not) wanting to choose the best pair of T&P muons." << endl;
   cout << "\t - create_selection_variable: 1 (0) in case of (not) wanting to create a variable \
-encompassing User's pre-defined selections.\n\n" << endl;
+encompassing User's pre-defined selections;" << endl;
+  cout << "\t - selected_cuts: selection cuts.\n\n" << endl;
+
   gSystem->Exit(0);
 }
+
+// =================================================================================================
+vector <double> compute_weights ( TTree*, TTree*, string, string );
+
 
 // =================================================================================================
 //
 //                                       Main function starts here.
 //
 // =================================================================================================
-void addBestPair_RunEvent ( string dataset_definition == "", const char* file_path == "",
-			       Int_t let_debug == 0, Int_t let_create_new_root_file == 0,
-			       Int_t let_choose_pair == 1, Int_t let_create_selection_variable == 1 ) {
+void addBestPair_RunEvent ( string dataset_type == "", string dataset_definition == "",
+			    const char* file_path == "", const char* data_file_path == "",
+			    Int_t let_debug == 0, Int_t let_create_new_root_file == 0,
+			    Int_t let_choose_pair == 1, Int_t let_create_selection_variable == 1,
+			    string selected_cuts == "" ) {
 
   // This macro can be used in CONDOR nodes, and it is important to not modify this line
   string output_file_name = "output_nEvents_after_selection.txt";  // MUST NOT CHANGE THIS LINE
@@ -189,10 +213,24 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
     cout << "\t ERROR: wrong value passed to input variables.\n";
     addBestPair_RunEvent ();
   }
+  if ( (typeid(dataset_type) != typeid(string)) || (dataset_type == "") ) {
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << "\t ERROR: in macro addBestPair_RunEvent ():" << endl;
+    cout << "\t Maybe has passed wrong input type (or even no input) into variable \"dataset_type\"." << endl;
+    addBestPair_RunEvent ();
+    gSystem->Exit(0);
+  }
   if ( (typeid(file_path) != typeid(char*)) || (file_path == "") ) {
     cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
     cout << "\t ERROR: in macro addBestPair_RunEvent ():" << endl;
     cout << "\t Maybe has passed wrong input type (or even no input) into variable \"file_path\"." << endl;
+    addBestPair_RunEvent ();
+    gSystem->Exit(0);
+  }
+  if ( (typeid(data_file_path) != typeid(char*)) || (data_file_path == "") ) {
+    cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << "\t ERROR: in macro addBestPair_RunEvent ():" << endl;
+    cout << "\t Maybe has passed wrong input type (or even no input) into variable \"data_file_path\"." << endl;
     addBestPair_RunEvent ();
     gSystem->Exit(0);
   }
@@ -203,7 +241,16 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
     addBestPair_RunEvent ();
     gSystem->Exit(0);
   }
+  if ( (typeid(selected_cuts) != typeid(string)) || (selected_cuts == "") ) {
+  cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << "\t ERROR: in macro addBestPair_RunEvent ():" << endl;
+    cout << "\t Maybe has passed wrong input type (or even no input) into variable \"dataset_definition\"." << endl;
+    addBestPair_RunEvent ();
+    gSystem->Exit(0);
+  }
 
+  // ================================================
+  // ===== Open input file
   TFile *fIn = TFile::Open( file_path );
   if( !fIn ){
     cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
@@ -217,17 +264,19 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
   // ================================================
   // ===== Write here the variables you want to use
   UInt_t run, event, lumi;
-  tIn->SetBranchAddress("run",        &run);
-  tIn->SetBranchAddress("event",      &event);
-  tIn->SetBranchAddress("lumi",       &lumi);
+  tIn->SetBranchAddress("run",   &run);
+  tIn->SetBranchAddress("lumi",  &lumi);
+  tIn->SetBranchAddress("event", &event);
+
 
   Int_t   tag_IsoMu24;
-  Float_t NewTuneP_pt,  tag_NewTuneP_pt,         pair_DimuonVtxFitNormQui2;  
-  Float_t NewTuneP_eta, tag_NewTuneP_eta,        pair_newTuneP_mass;
+  Float_t NewTuneP_pt,  tag_NewTuneP_pt,             pair_DimuonVtxFitNormQui2;  
+  Float_t NewTuneP_eta, tag_NewTuneP_eta,            pair_newTuneP_mass;
   Float_t NewTuneP_phi, tag_NewTuneP_phi;
-  Float_t charge,       tag_charge,              pair_dz;
-  Float_t tkIso,        tag_combRelIsoPF04dBeta, tag_innertrackPtRelError;
-  Float_t tag_MET,      tag_METphi,              pair_collinearity1;
+  Float_t charge,       tag_charge,                  pair_dz;
+  Float_t tkIso,        tag_combRelIsoPF04dBeta,     tag_innertrackPtRelError;
+  Float_t tag_MET10,    tag_METphi10,                pair_collinearity1;
+  Float_t tag_nVertices;
   tIn->SetBranchAddress("NewTuneP_pt",               &NewTuneP_pt);
   tIn->SetBranchAddress("tag_NewTuneP_pt",           &tag_NewTuneP_pt);
   tIn->SetBranchAddress("NewTuneP_eta",              &NewTuneP_eta);
@@ -244,31 +293,32 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
   tIn->SetBranchAddress("tag_innertrackPtRelError",  &tag_innertrackPtRelError);
   tIn->SetBranchAddress("tkIso",                     &tkIso);
   tIn->SetBranchAddress("pair_collinearity1",        &pair_collinearity1);
-  tIn->SetBranchAddress("tag_MET",                   &tag_MET);
-  tIn->SetBranchAddress("tag_METphi",                &tag_METphi);
+  tIn->SetBranchAddress("tag_MET10",                 &tag_MET10);
+  tIn->SetBranchAddress("tag_METphi10",              &tag_METphi10);
+  tIn->SetBranchAddress("tag_nVertices",             &tag_nVertices);
+
 
   // ===============================================
   // ===== Write here the variables you want to save
   //  if (create_new_root_file) {
   string new_file_name = "tnpZ_addBestPair.root";
-  TFile *fOut  = new TFile( new_file_name.c_str(), "RECREATE" );
+  TFile *fOut  = new TFile( "auxiliar_tnpZ_addBestPair.root", "RECREATE" );
   fOut->mkdir("tpTree")->cd();
   TTree *tOut  = tIn->CloneTree(0);  
-  Int_t bestPair;
-  Int_t pair_passBaselineSelections;
+  Int_t   bestPair;
+  Int_t   pair_passBaselineSelections;
   Float_t probe_tkRelIso;
   Float_t tag_MT;
 
   if (create_new_root_file) {
-    tOut->Branch("pair_BestPair",               &bestPair,                    "pair_BestPair/I"); 
-    tOut->Branch("probe_tkRelIso",              &probe_tkRelIso,              "probe_tkRelIso/F");
-    tOut->Branch("tag_MT",                          &tag_MT,                          "tag_MT/F"); 
+    tOut->Branch("probe_tkRelIso",                &probe_tkRelIso,              "probe_tkRelIso/F");
+    tOut->Branch("tag_MT",                        &tag_MT,                      "tag_MT/F");
+    if ( choose_pair )
+      tOut->Branch("pair_BestPair",               &bestPair,                    "pair_BestPair/I");
     if ( create_selection_variable )
       tOut->Branch("pair_passBaselineSelections", &pair_passBaselineSelections, "pair_passBaselineSelections/I");
   }
-  else {
-    // Nothing to do!
-  }
+
 
   if (!create_new_root_file)
     tOut->SetAutoFlush();
@@ -298,13 +348,7 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
   Float_t min_difference         = 0.00001; // minimum difference between pT of muons (it's up to the USER)
 
   Int_t   bestCandidate          = 0;  // inform the best pair candidate concerning the Chi2 condition
-  Float_t Chi2Probability        = 0.; // decide the best candidade concernig chi2 probability
-  Float_t min_Chi2Probability    = 0.; // receive value of best chi2 probability
-  Float_t bestChi2Probability    = TMath::Prob(1, 1); // carry value of a chi2 probability with NDF = 1
-
-  UInt_t pairs_NoCondition       = 0;  // account for the number of pairs which do not pass by any condition
-  UInt_t pairs_Chi2Condition     = 0;  // account for the number of pairs passing by "T <-> P" condition
-  UInt_t pairs_ExchangeCondition = 0;  // account for the number of pairs passing by Chi2 condition
+  Int_t   double_pair            = 0;  // other best pair candidate (if is a replic of the first one when "T <-> P"
 
   Float_t cosmics                = TMath::Pi() - 0.02; // remove cosmic-ray muons with 3D-angle > cosmics
 
@@ -315,10 +359,9 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
   // - probe_pt[]:        pT of Probe
   // - NormChi2[]:        Chi2/NDF
   // - pair_pass[]:       pairs passing or not
-  // - chi2Probability[]: chi2 probability
   Int_t   pair_pass[NUMBER_OF_ARRAYS], done[NUMBER_OF_ARRAYS];
   Float_t tag_pt[NUMBER_OF_ARRAYS],    probe_pt[NUMBER_OF_ARRAYS];
-  Float_t NormChi2[NUMBER_OF_ARRAYS],  chi2Probability[NUMBER_OF_ARRAYS];
+  Float_t NormChi2[NUMBER_OF_ARRAYS];
 
   cout << "======================================================================" << endl;
   cout << "\n\t Debug mode?      : " << ((debug) ? "Yes" : "No")
@@ -332,6 +375,26 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
 
 
   // =================================================================================================
+  // ===== If wanting only to create new ROOT file with new variables, without choosing pairs
+  if ( (create_new_root_file) && (!choose_pair) && (!create_selection_variable) ) {
+    for ( UInt_t i = 0; i < n; ++i ) {
+      tIn->GetEntry(i);
+
+      // Fill variable MT = sqrt{ 2*pT(tag)*ETmiss*(1 - cos(Dphi)) }
+      // where   cos(Dphi) = cos(DeltaPhi( tag_NewTuneP_phi, NewTuneP_phi ))
+      tag_MT = sqrt( 2*tag_NewTuneP_pt*tag_MET10*(1 - cos(tag_NewTuneP_phi - tag_METphi10)) );
+      
+      // Evaluate variable of track based isolation for the current Tag & Probe pair
+      probe_tkRelIso = (Float_t)tkIso / (Float_t)NewTuneP_pt;
+
+      // Fill new ROOT file.
+      // Even in case of not wanting to create a new ROOT file, "Fill()" triggers
+      // the "SetAutoFlush()" function, speeding up the processing.
+      tOut->Fill();
+    }
+  }
+
+  // =================================================================================================
   // In case of only wanting to create a new variable encompassing selected events, without
   // the workflow to clean up events.
   if ((!choose_pair) && (create_selection_variable)) {
@@ -341,7 +404,7 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
     //      WARNING: this macro may be used in CONDOR nodes, being important to keep the commented
     //               line bellow as it is. Only change the "if ()" condition.
     //
-    for ( Int_t i = 0; i < n; ++i ) {
+    for ( UInt_t i = 0; i < n; ++i ) {
       // Before filling the new ROOT file, it is mandatory to get entry from the pair being
       // analyzed. Start "j" from the first pair ("current_pair") of the current event.
       tIn->GetEntry(i);
@@ -360,7 +423,7 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
 
       // Fill variable MT = sqrt{ 2*pT(tag)*ETmiss*(1 - cos(Dphi)) }
       // where   cos(Dphi) = cos(DeltaPhi( tag_NewTuneP_phi, NewTuneP_phi ))
-      tag_MT = sqrt( 2*tag_NewTuneP_pt*tag_MET*(1 - cos(tag_NewTuneP_phi - tag_METphi)) );
+      tag_MT = sqrt( 2*tag_NewTuneP_pt*tag_MET10*(1 - cos(tag_NewTuneP_phi - tag_METphi10)) );
       
       // Evaluate variable of track based isolation for the current Tag & Probe pair
       probe_tkRelIso = (Float_t)tkIso / (Float_t)NewTuneP_pt;
@@ -387,13 +450,11 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
       counter       = 0;     // re-inialize the counter of pairs of the same event
       event_i       = event; // copy value of event of a given pair "i"
       bestCandidate = 0;     // keep correspondent index of the best pair concerning its Chi2/NDF
+      double_pair   = 0;     // label second pair, in case of a tag becoming probe and a probe becoming tag
 
       // Inialize arrays
       Int_t number_of_arrays = NUMBER_OF_ARRAYS;
-      for ( Int_t j = 0; j < number_of_arrays; ++j ) {
-	done[j]      = 0;
-	pair_pass[j] = 0;
-      }
+      for ( Int_t j  = 0; j < number_of_arrays; ++j )   pair_pass[j] = 0;
 
       // =================================================================================================
       // Loop over pairs of Tag and Probe muons, starting the current pair,
@@ -410,261 +471,63 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
 	  probe_pt[counter]        = NewTuneP_pt;
 	  tag_pt[counter]          = tag_NewTuneP_pt;
 	  NormChi2[counter]        = pair_DimuonVtxFitNormQui2;
-	  chi2Probability[counter] = TMath::Prob(pair_DimuonVtxFitNormQui2, 1);
 	  // Account for the number of pairs in the current event
 	  ++counter;
 	}
       } // End of for ( UInt_t j = i; j < n; ++j )
 
 
-      // =================================================================================================
+      // ==============================================================================================
       if ( counter == 1 ) {
 	// If Chi2/NDF < 0, it is a "bad" pair.
 	if ( (NormChi2[0] < 0) || (fabs(tag_pt[0] - probe_pt[0]) < min_difference) || (NormChi2[0] > 100) )
 	  pair_pass[0] = 0;
-	
 	else
 	  pair_pass[0] = 1;
       }
       else { // (1)
 	// =================================================================================================
-	// Start looping again over the pairs, but only look at those ones found to
-	// belong to the same event.
-	for ( Int_t j = 0; j < (counter-1); ++j ) {
-	  if ( (NormChi2[j] < 0) || (fabs(tag_pt[j] - probe_pt[j]) < min_difference) || (NormChi2[j] > 100) ) {
-	    pair_pass[j] = 0; done[j] = 999; // This is a "bad" pair
-	    continue;
+	// Loop over T&P pairs of the same event and check which pair has the
+	// lowest Chi2/NDF value.
+	for ( Int_t j = 0; j < counter; j++ ) {
+	  if ( j == 0 ) {
+	    // Take it as the best pair, for while
+	    pair_pass[j]  = 1;
+	    bestCandidate = j;
 	  }
-	  else if ( (done[j] == 999) && (pair_pass[j] == 0) ) {
-	    // This pair has already been analyzed and a final decision has alrealdy been given
-	    // about this pair using "done[] = 999" and "pair_pass[j] = 0". It is a "bad" pair.
-	    continue; 
-	  }
-	  else if ( (done[j] == 999) && (pair_pass[j] == 1) &&  (bestCandidate == 0) ) {
-	    // Do nothing!!!
-	    // This pair has been marked as "good" ("pair_pass[j] == 1"). Let's keep as it is.
-	  }
-	  else if ( (done[j] == 999) && (pair_pass[j] == 1) &&  (bestCandidate != 0) ) {
-	    // This pair has been marked as "good" ("pair_pass[j] == 1"), but may be compared
-	    // with a previous pair candidate already analyzed concening the best Chi2. Variable
-	    // "done[j]" has to be updated accordingly.
-	    done[j] = bestCandidate;
-	  }
-	  else if ( (done[j] != 999) && (done[j] > 0) ) {
-	    // This pair has alrealdy been analyzed concening the best Chi2 condition. Variable
-	    // "done[j]" has to be updated accordingly.
-	    done[j] = bestCandidate;
-	  }
-	  else if ( (done[j] == 0) && (bestCandidate != 0) ) {
-	    // This pair has alrealdy been analyzed concening the best Chi2 condition. Variable
-	    // "done[j]" has to be updated accordingly, but since "done[j] = 0", it has been
-	    // marked as a "bad" pair.
-	    done[j] = bestCandidate;
-	  }
-	  else {
-	    // This pair has not been analyzed and, in principle, it is a "good" pair. This
-	    // situation may change later on, so...
-	    pair_pass[j] = 1; done[j] = 0;
-	  }
-
-
-	  // =================================================================================================
-	  // Loop over pairs of same event, starting from the first pair ahead.
-	  // First of all, look for cases where a Tag becomes a Probe and vice-versa.
-	  /*
-	  for ( Int_t m = j+1; m < counter; ++m ) {
-	    if ( done[m] == 999 ) {
-	      // Do nothing!!! This pair has already been analyzed and a final decision
-	      // has alrealdy been given about it using "done[] = 999".
-	      continue;
+	  else { // (2)
+	    // In case of current pair is the same one of a previous pair already
+	    // analyzed (and marked as the best one) both pairs should be marked as the bests.
+	    if ( (fabs(tag_pt[j] - probe_pt[bestCandidate]) <  min_difference) &&
+		 (fabs(tag_pt[bestCandidate] - probe_pt[j]) <  min_difference) ) {
+	      pair_pass[j] = 1;
+	      double_pair  = j; // double_pair > 0 means we found a duplicated pair with Tag becoming Probe
 	    }
 	    else { // (3)
-	      if ( (NormChi2[m] < 0) || (fabs(tag_pt[m] - probe_pt[m]) < min_difference) ) {
-		pair_pass[m] = 0; done[m] = 999; // This is a "bad" pair
+	      // Compare with previous best pair
+	      if ( NormChi2[j] < NormChi2[bestCandidate] ) {
+		// In case when the best previous candidate was a double pair
+		if ( double_pair > 0 ) {
+		  pair_pass[j]             = 1; // First, inform that now this is the best pair so far.
+		  pair_pass[double_pair]   = 0; // Second, duplicated previous best candidate becomes a bad pair.
+		  pair_pass[bestCandidate] = 0; // Third, previous best candidate becomes a bad pair.
+		  bestCandidate            = j; // Finally, update current pair as the best candidate.
+		}
+		// In case when the best previous candidate was not a double pair
+		else {
+		  pair_pass[j]             = 1; // First, inform that now this is the best pair so far.
+		  pair_pass[bestCandidate] = 0; // Second, make the older one becomes a bad pair.
+		  bestCandidate            = j; // Finally, update current pair as the best candidate.
+		}
+	      } // End of if ( NormChi2[j] < NormChi2[bestCandidate] )
+	      else {
+		// In case current pair is not the best one
+		pair_pass[j]  = 0;
 	      }
-	      else { // (4)
-		// Check if the Tag of the pair "j" has become a Probe of the pair "m" taking
-		// into account the difference between their transverse momentum w.r.t. the
-		// minimum difference defined above.
-		if ( (fabs(tag_pt[j] - probe_pt[m]) <  min_difference) &&
-		     (fabs(tag_pt[m] - probe_pt[j]) <  min_difference) ) {
-		  if ( tag_pt[m] < probe_pt[m] ) {   // In the current pair, pT(Tag) < pT(Probe) ?
-		    pair_pass[j] = 0; done[j] = 999; // Pair "j" is "bad"
-		    pair_pass[m] = 1; done[m] = 999; // Pair "m" is "good"
-		  }
-		  else {                             // In the current pair, pT(Tag) > pT(Probe) ?
-		    pair_pass[j] = 1; done[j] = 999; // Pair "j" is "good"
-		    pair_pass[m] = 0; done[m] = 999; // Pair "m" is "bad"
-		  }
-		} // End of if ( (fabs(tag_pt[j] - probe_pt[m]) <  min_difference) &&
-	        //             (fabs(probe_pt[j] - tag_pt[m]) <  min_difference) )
-		else {
-		  // Tag has NOT became a Probe, so mark current pair as "good" for while.
-		  pair_pass[m] = 1; done[m] = 0;
-		}
-	      } // End of (4)
 	    } // End of (3)
-	  } // End of for ( Int_t m = j+1; m < counter; ++m )
-	  */
-
-	  // =================================================================================================
-	  for ( Int_t m = j+1; m < counter; ++m ) {
-	    if ( done[m] == 999 ) {
-	      // Do nothing!!! This pair has already been analyzed and a final decision
-	      // has alrealdy been given about it using "done[] = 999".
-	      continue;
-	    }
-	    // Initializing pairs "m > j"
-	    else pair_pass[m] = 1; done[m] = 0;
-	  }
-
-	  // The first condition [Tag <--> Probe] has already been looked for and, if found,
-	  // pair "j" has already been marked as "bad" (as final answer). Then there
-	  // is no meaning to keep looking at this pair. Continue if it is the case!
-	  if ( (done[j] == 999) && (pair_pass[j] == 0) )
-	    continue;
-
-	  // =================================================================================================
-	  // If case of [Tag <--> Probe] has not been found, loop again over pairs of the same
-	  // event, starting from the first pair ahead, and look for a pair with the best Chi2/NDF.
-	  // This pair will be marked as "good", and all other ones as "bad", even if it has already
-	  // been marked as "good" when analyzing the case of Tag becoming a Probe [Tag <--> Probe].
-	  for ( Int_t m = j+1; m < counter; ++m ) {
-	    if ( (pair_pass[m] == 0) && (done[m] == 999) ) {
-	      // Do nothing!!! This pair has already been analyzed and a final decision
-	      // has alrealdy been given about it using "done[] = 999" and "pair_pass[j] = 0".
-	      continue;
-	    }
-
-	    if ( (NormChi2[m] < 0) || (fabs(tag_pt[m] - probe_pt[m]) < min_difference) || (NormChi2[m] > 100) ) {
-	      pair_pass[m] = 0; done[m] = 999;
-	    }
-	    else { // (5)
-	      // Get the Chi2 probability of the pair whose Chi2/NDF is the closest to "1".
-	      // A negative signal is given if pair "j" wins, and positive if pair "m".
-	      min_Chi2Probability = (fabs(chi2Probability[j] - bestChi2Probability) <
-				     fabs(chi2Probability[m] - bestChi2Probability)) ?
-		                    chi2Probability[j]*(-1) : chi2Probability[m];
-
-	      // If the pair has not been analyzed yet ("bestCandidate == 0") ...
-	      if ( bestCandidate == 0 ) { // (6)
-		// Check which pair has the best Chi2 probability. Pair "j" or pair "m" ?
-		if (      min_Chi2Probability < 0) {
-		  // Candidate with best Chi2 probability is identified via array "done[j]".
-		  // "done[2] = 100+2" means that pair "j = 2" is the best one.
-		  pair_pass[j] = 1; done[j] = 100+j;
-		  pair_pass[m] = 0; done[m] = 0;
-		}
-		else if ( (min_Chi2Probability > 0) &&
-			  (fabs(chi2Probability[j] - chi2Probability[m]) > min_difference) ) {
-		  // "done[2] = 100+2" means that pair "m = 2" is the best one, but this
-		  // information is kept using index "j" ("done[j] = 100+m") because the
-		  // best candidate is chosen taking pair "j" as reference for the following pairs.
-		  pair_pass[j] = 0; done[j] = 100+m;
-		  pair_pass[m] = 1; done[m] = 1;
-		}
-		else if ( (min_Chi2Probability > 0) &&
-			  (fabs(chi2Probability[j] - chi2Probability[m]) < min_difference) ) {
-		  // This is the case where pairs "j" and "m" are composed by the same muons.
-		  // Here, a Tag became a Probe and vice-versa.
-		  pair_pass[j] = 1; done[j] = 100+m;
-		  pair_pass[m] = 1; done[m] = 1;
-		}
-		else {
-		  // This is the case of "min_Chi2Probability ~ 0".
-		  // That is, both pairs have chi2 probability ~ 0.
-		  // To be simple, let's make both pairs passing as good candidates.
-		  pair_pass[j] = 1; done[j] = 100+m;
-		  pair_pass[m] = 1; done[m] = 1;
-		}
-
-		// Get the index correspondent to the candidate marked as the best one
-		bestCandidate = done[j];
-
-	      } // End of (6)
-	      else { // (7)
-		// If the pair has already been analyzed ("done[j] == 100+j or 100+m") ...
-		// Get the index correspondent to the candidate marked as the best one.
-		bestCandidate = done[j] - 100;
-		
-		if ( (bestCandidate == j) || (bestCandidate == m) ) { // (7.1)
-		  // Check which pair has the best Chi2 probability. Pair "j" or pair "m" ?
-		  if (      min_Chi2Probability < 0) {
-		    // Candidate with best Chi2 probability is identified via array "done[j]".
-		    // "done[2] = 100+2" means that pair "j = 2" is the best one.
-		    pair_pass[j] = 1; done[j] = 100+j;
-		    pair_pass[m] = 0; done[m] = 0;
-		  }
-		  else if ( (min_Chi2Probability > 0) &&
-			    (fabs(chi2Probability[j] - chi2Probability[m]) > min_difference) ) {
-		    // "done[2] = 100+2" means that pair "m = 2" is the best one, but this
-		    // information is kept using index "j" ("done[j] = 100+m") because the
-		    // best candidate is chosen taking pair "j" as reference for the following pairs.
-		    pair_pass[j] = 0; done[j] = 100+m;
-		    pair_pass[m] = 1; done[m] = 1;
-		  }
-		  else if ( (min_Chi2Probability > 0) &&
-			    (fabs(chi2Probability[j] - chi2Probability[m]) < min_difference) ) {
-		    // This is the case where pairs "j" and "m" are composed by the same muons.
-		    // Here, a Tag became a Probe and vice-versa.
-		    pair_pass[j] = 1; done[j] = 100+m;
-		    pair_pass[m] = 1; done[m] = 1;
-		  }
-		  else {
-		    // This is the case of "min_Chi2Probability ~ 0".
-		    // That is, both pairs have chi2 probability ~ 0.
-		    // To be simple, let's make both pairs passing as good candidates.
-		    pair_pass[j] = 1; done[j] = 100+m;
-		    pair_pass[m] = 1; done[m] = 1;
-		  }
-		
-		  // Get the index correspondent to the candidate marked as the best one
-		  bestCandidate = done[j];
-		  continue; // Comparision between pairs "j" and "m" are done at this point.
-		} // End of (7.1)
-
-		// Compute how far the Chi2 probability of pairs "j" or "m" is from the best
-		// scenario (Chi2/NDF ~ 1). A positive sign indicates that previous best candidate
-		// keeps being the best, while a negative sign means that previous best candidate
-		// is no longer the best (may be pair "j" or "m").
-		Chi2Probability = fabs(fabs(min_Chi2Probability)      - bestChi2Probability) -
-		                  fabs(chi2Probability[bestCandidate] - bestChi2Probability);
-
-		if (      (Chi2Probability > 0) ) {
-		  // Previous best candidate wins
-		  done[j]             = 100 + bestCandidate;   pair_pass[j]             = 0;
-		  done[m]             = 0;                     pair_pass[m]             = 0;
-		}
-		else if ( (Chi2Probability < 0) && (min_Chi2Probability < 0) ) {
-		  // Previous best candidate looses, and pair "j" wins
-		  done[j]             = 100+j;                 pair_pass[j]             = 1;
-		  done[m]             = 0;                     pair_pass[m]             = 0;
-		  done[bestCandidate] = 0;                     pair_pass[bestCandidate] = 0;
-		}
-		else if ( (Chi2Probability < 0) && (min_Chi2Probability > 0) ) {
-		  // Previous best candidate looses, and pair "m" wins
-		  done[j]             = 100+m;                 pair_pass[j]             = 0;
-		  done[m]             = 1;                     pair_pass[m]             = 1;
-		  done[bestCandidate] = 0;                     pair_pass[bestCandidate] = 0;
-		}
-		else {
-		  // This is not an expected case, where "Chi2Probability ~ 0".
-		  // That is, either both pairs have chi2 probability very close to each other, or one of
-		  // them has chi2 probability very close to a good pair candidate already analyzed.
-		  // To be simple, let's make both pairs passing as good candidates.
-		  done[j]             = 100 + bestCandidate;   pair_pass[j]             = 1;
-		  done[m]             = 1;                     pair_pass[m]             = 1;
-		}
-		
-		// Get the index correspondent to the candidate marked as the best pair.
-		bestCandidate = done[j];
-
-	      } // End of (7)
-	    } // End of (5)
-	  } // End of for ( Int_t m = j+1; m < counter; ++m )
-	} // End of for ( Int_t j = 0; j < (counter-1); ++j )
+	  } // End of (2)
+	} // End of ( Int_t j = 0; j < counter; j++ )
       } // End of (1)
-
       // =================================================================================================
       // Loop over the pair of Tag & Probe muons belonging to the same event and fill the tree
       // with the new variable ("bestPair") concerning information from the "pair_pass[]" array
@@ -683,17 +546,7 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
 	  // If pair has been marked as "good"
 	  bestPair = 1;
 	  ++pairs_passed;
-
-	  if ( done[j] == 999 )        // Considering only "good" pairs...
-	    ++pairs_ExchangeCondition; // how many passed the condition [Tag <--> Probe] ?
-	  else {                       // ------------------------------------------------------
-	    if ( done[j] > 0  )        // Considering only "good" pairs...
-	      ++pairs_Chi2Condition;   // how many passed the condition [best Chi2/NDF] ?
-	                               // ------------------------------------------------------
-	    if ( done[j] == 0 )        // Considering only "good" pairs...
-	      ++pairs_NoCondition;     // how many passed without reaching any condition above ?
-	  }
-
+	  
 	  if ( create_selection_variable ) {
 	    // In case of wanting to verify the number of pairs also passing specific selections, modify
 	    // the condition bellow based on the available list of variables previously set in the input tree.
@@ -714,23 +567,24 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
 	    }
 	  } // End of if ( create_selection_variable )
 	} // End of (9)
-
+	  
 	if (debug) {
 	  cout << "i: "                << current_pair + j   << ",\t event: "      << event
 	       << ",\t pair_pass["     << j                  << "]: "              << pair_pass[j]
 	       << ",\t bestPair: "     << bestPair           << ",\t tag_pt: "     << tag_NewTuneP_pt
-	       << ",\t probe_pt: "     << NewTuneP_pt	   << ",\t tag_charge: " << tag_charge
+	       << ",\t probe_pt: "     << NewTuneP_pt	     << ",\t tag_charge: " << tag_charge
 	       << ",\t probe_charge: " << charge             << ",\t dz: "         << pair_dz
-	       << ",\t mass: "         << pair_newTuneP_mass << ",\t Chi2: "       << pair_DimuonVtxFitNormQui2 << endl;
+	       << ",\t mass: "         << pair_newTuneP_mass << ",\t Chi2: "       << pair_DimuonVtxFitNormQui2
+	       << endl;
 	}
-
+	
 	// Fill variable MT = sqrt{ 2*pT(tag)*ETmiss*(1 - cos(Dphi)) }
 	// where   cos(Dphi) = cos(DeltaPhi( tag_NewTuneP_phi, NewTuneP_phi ))
-	tag_MT = sqrt( 2*tag_NewTuneP_pt*tag_MET*(1 - cos(tag_NewTuneP_phi - tag_METphi)) );
+	tag_MT = sqrt( 2*tag_NewTuneP_pt*tag_MET10*(1 - cos(tag_NewTuneP_phi - tag_METphi10)) );
 	
 	// Evaluate variable of track based isolation for the current Tag & Probe pair
 	probe_tkRelIso = (Float_t)tkIso / (Float_t)NewTuneP_pt;
-	
+
 	// Fill new ROOT file.
 	// Even in case of not wanting to create a new ROOT file, "Fill()" triggers
 	// the "SetAutoFlush()" function, speeding up the processing.
@@ -738,17 +592,86 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
 	
 	if ( (current_pair + j + 1) == n ) i = n;        // Avoid repeating the last pair
       } // End of for ( Int_t j = 0; j < counter; ++j )
-
+      
       if( !debug ) {
 	if ((i+1) % step == 0) { 
 	  double totalTime = timer.RealTime()/60.;    timer.Continue();
 	  double fraction  = double(i+1)/double(n+1), remaining = totalTime*(1-fraction)/fraction;
-	  printf ("Done %9d/%9d   %5.1f%%   (elapsed %5.1f min, remaining %5.1f min)\n", i, n, i*evDenom, totalTime, remaining); 
+	  printf ("Done %9d/%9d   %5.1f%%   (elapsed %5.1f min, remaining %5.1f min)\n",
+		  i, n, i*evDenom, totalTime, remaining); 
 	  fflush (stdout);
 	}
       }
     } // End of for (UInt_t i = 0; i < n; ++i)
-  } // End of if ( choose_pair )
+  } // if ( choose_pair )
+
+  tOut->AutoSave(); // According to root tutorial this is the right thing to do
+  //  fOut->Close();
+
+  printf ("==============================================================================================================\n");
+  printf ("\t Computing vertex multiplicity weight...\n\n");
+
+
+
+  // =================================================================================================
+  // If MC, compute vertex multiplicity weight
+  if ( create_new_root_file && (dataset_type == "MC") ) {
+    // ================================================
+    // ===== Open Data input file
+    TFile *fDataIn = TFile::Open( data_file_path );
+    if( !fDataIn ){
+      cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+      cout << "\t ERROR: in macro addBestPair_RunEvent ():" << endl;
+      cout << "\t Input ROOT file \"" << data_file_path << "\" not found. Check the dataset path." << endl;
+      addBestPair_RunEvent ();
+      gSystem->Exit(0);
+    }
+    TTree *tDataIn  = (TTree *)fDataIn->Get("tpTree/fitter_tree");
+
+    TFile *fOutFinal  = new TFile( new_file_name.c_str(), "RECREATE" );
+    fOutFinal->mkdir("tpTree")->cd();
+    TTree *tOutFinal  = tOut->CloneTree(0);
+
+    Float_t weight;
+    tOutFinal->Branch("weight", &weight, "weight/F"); 
+
+    // =================================================================================================
+    // ==== Compute vertex multiplicity weight for MC samples
+    vector <double> weights(101, 1.0);
+    string MCcuts;
+    stringstream joinCuts;
+    if ( choose_pair ) {
+      joinCuts << selected_cuts << " && (pair_BestPair == 1)";
+      MCcuts = joinCuts.str();
+      weights = compute_weights(tOut, tDataIn, MCcuts, selected_cuts);
+    }
+    else
+      weights = compute_weights(tOut, tDataIn, selected_cuts, selected_cuts);
+
+    Float_t tag_Data_nVertices;
+    tOut->SetBranchAddress("tag_nVertices", &tag_Data_nVertices);
+
+    for ( UInt_t i = 0; i < n; ++i ) {
+      tOut->GetEntry(i);
+      // Compute vertex multiplicity weight for MC samples
+      weight = (float)weights[int(tag_Data_nVertices)];
+      tOutFinal->Fill();
+    }
+    tOutFinal->AutoSave(); // According to root tutorial this is the right thing to do
+    fOutFinal->Close();
+  }
+  else if ( create_new_root_file && (dataset_type != "MC") ) {
+    fOut->Close();
+    stringstream rename_file;
+    rename_file << ".!mv auxiliar_" << new_file_name << " " << new_file_name; // Using bash commands via ROOT
+    gROOT->ProcessLine( rename_file.str().c_str() );
+  }
+  else {
+    fOut->Close();
+    stringstream deleting_file;
+    deleting_file << ".!rm -f auxiliar_" << new_file_name; // Using bash commands via ROOT
+    gROOT->ProcessLine( deleting_file.str().c_str() );
+  }
 
   printf ("==============================================================================================================\n");
   printf ("\t [[ Data Set: %s ]]\n\n",                       dataset_definition.c_str());
@@ -758,11 +681,6 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
   printf ("\t Number of pairs without specific selections:\n");
   printf ("\t   - good pairs                        = %9d\n", pairs_passed);
   printf ("\t   - bad pairs                         = %9d\n", pairs_failed);
-  printf ("\t -------------------------------------------------\n");
-  printf ("\t From pairs marked as \"good\":\n");
-  printf ("\t   - condition [Tag <===> Probe]       = %9d\n", pairs_ExchangeCondition);
-  printf ("\t   - condition [Best Chi2/NDF]         = %9d\n", pairs_Chi2Condition);
-  printf ("\t   - condition [None of above]         = %9d\n", pairs_NoCondition);
   printf ("\t -------------------------------------------------\n");
   printf ("\t Number of \"good\" pairs after specific selections:\n");
   printf ("\t   - pT(Tag) < pT(Probe)               = %9d\n", count_ProbePt_greater_than_TagPt);
@@ -776,9 +694,6 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
   if ( output_file.is_open() ) {
     output_file << "\t(" << pairs_passed            << ", ";
     output_file << pairs_failed                     << ", ";
-    output_file << pairs_ExchangeCondition          << ", ";
-    output_file << pairs_Chi2Condition              << ", ";
-    output_file << pairs_NoCondition                << ", ";
     output_file << count_ProbePt_greater_than_TagPt << ", ";
     output_file << count_TagPt_greater_than_ProbePt << ", ";
     output_file << count_TagPt_equal_to_ProbePt     << ", ";
@@ -792,12 +707,96 @@ void addBestPair_RunEvent ( string dataset_definition == "", const char* file_pa
     gSystem->Exit(0);
   }
 
-  tOut->AutoSave(); // According to root tutorial this is the right thing to do
-  fOut->Close();
-  // If not wanting to create a new ROOT file, it is deleted in The End.
-  if ( !create_new_root_file ) {
-    stringstream deleting_file;
-    deleting_file << ".!rm -f " << new_file_name; // Using bash commands via ROOT
-    gROOT->ProcessLine( deleting_file.str().c_str() );
+} // End of main function
+
+
+//=========================================================================================
+//=========================================================================================
+vector <double> compute_weights ( TTree* tIn, TTree* tData, string cutsMC, string cutsData ) {
+
+  /////////////////////////////////////////////////////////////
+  // Check if Data and MC trees are not empty
+  if ( tData->GetEntries() == 0 ) {
+    std::cerr << "Data tree is empty" << std::endl;
+    return;
   }
+  else if ( tIn->GetEntries() == 0 ) {
+    std::cerr << "MC tree is empty" << std::endl;
+    return;
+  }
+  else {
+    // Trees are OK!
+  }
+
+  stringstream histogram_name;
+  histogram_name << "hData";
+
+  TH1F *hData = new TH1F(histogram_name.str().c_str(), histogram_name.str().c_str(), 100, -0.5, 99.5);
+  histogram_name.str("");
+  histogram_name << "hMC";
+  TH1F *hMC   = new TH1F(histogram_name.str().c_str(), histogram_name.str().c_str(), 100, -0.5, 99.5);
+
+  /////////////////////////////////////////////////////////////
+  // Filling Data distributions of vertices
+  stringstream canvas_weight;
+  canvas_weight << "canvas_weight";
+  TCanvas *c1 = new TCanvas(canvas_weight.str().c_str(), canvas_weight.str().c_str());
+  c1->Divide(2,1);
+  c1->cd(1);
+  histogram_name.str("");
+  histogram_name << "tag_nVertices >> hData";
+  tData->Draw(histogram_name.str().c_str(), cutsData.c_str());
+
+  c1->cd(2);
+  // Filling MC distributions of vertices
+  histogram_name.str("");
+  histogram_name << "tag_nVertices >> hMC";
+  tIn->Draw(histogram_name.str().c_str(), cutsMC.c_str());
+
+  /////////////////////////////////////////////////////////////
+  // Normalizing Data and MC distributions to have integral "1"
+  double h_integral;
+  h_integral = (double)hData->Integral();
+  // Check if Data histogram is empty
+  if ( h_integral > 0 )
+    hData->Scale(1.0/(double)h_integral);
+  else {
+    hData->Scale(0.0);
+    cout << endl << "*\t\t Data histogram is empty after baseline selection!";
+    cout << endl << "*\t\t Weigths will be set to zero for this MC sample!";
+  }
+
+  h_integral = (double)hMC->Integral();
+  // Check if MC histogram is empty
+  if ( h_integral > 0 )
+    hMC->Scale(1.0/(double)h_integral);
+  else {
+    hMC->Scale(0.0);
+    if ( !((double)hData->Integral() > 0) ) {
+      cout << endl << "*\t\t MC histogram is empty after baseline selection!";
+      cout << endl << "*\t\t Weights will be set to zero for this MC sample!";
+    }
+    else {
+      cout << endl << "*\t\t MC histogram is empty after baseline selection!";
+      cout << endl << "*\t\t Some weights will be set to \"1\" for this MC sample!";
+    }
+  }
+  
+  /////////////////////////////////////////////////////////////
+  // Computing weights..............................................
+  // Compute N different weight values based on the N number of bins
+  // from Data/MC in the vertex multiplicity distribution.
+  std::vector<double> weights(hData->GetNbinsX()+1, 1.0);
+  for ( int m = 1, n = weights.size(); m < n; ++m ) {
+    double nData = (double)hData->GetBinContent(m);
+    double nMC   = (double)  hMC->GetBinContent(m);
+
+    // If nData > 0 && nMC > 0  -->  weight = nData/nMC
+    // If nData > 0 && nMC = 0  -->  weight = 1
+    // If nData = 0             -->  weight = 0
+    if ( nData > 0 ) weights[m-1] = (nMC > 0 ? (double)nData/(double)nMC : 1.0);
+    else             weights[m-1] = 0.0;
+  }
+
+  return weights;
 }
