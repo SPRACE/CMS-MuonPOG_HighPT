@@ -120,6 +120,9 @@ void ComputeEfficiencies () {
   TGraphAsymmErrors *hEffAllMC[nVars];
   TGraphAsymmErrors *hEffDataFinal[nVars];
 
+  double xMin = 0;
+  double xMax = 0;
+
   for (int i = 0; i < nVars; i++) {
     cout << "**************************************************************************" << endl;
     cout << "*\t Variable: " << variables[i].c_str() <<  endl;
@@ -256,20 +259,11 @@ void ComputeEfficiencies () {
 	      hNumAllMCbinned[i], hDenAllMCbinned[i],
 	      variables[i]);
 
-    //    cout << "((((( DY )))))" << endl;
-    //    hEffDY[i]    = new TGraphAsymmErrors(hNumDYbinned[i],    hDenDYbinned[i],    "n");
-    cout << "((((( Data )))))" << endl;
-    hEffData[i]  = new TGraphAsymmErrors(hNumDatabinned[i],  hDenDatabinned[i],  "n");
-    cout << "((((( All MC )))))" << endl;
-    hEffAllMC[i] = new TGraphAsymmErrors(hNumAllMCbinned[i], hDenAllMCbinned[i], "n");
-    cout << "((((( DY )))))" << endl;
-    if ( variables[i] != "vertex" )
-      hEffDY[i]    = new TGraphAsymmErrors(hNumDYbinned[i],    hDenDYbinned[i],    "n");
-    else {
-      hEffDY[i]    = (TGraphAsymmErrors*)hEffData[i]->Clone();
-      hEffDY[i]->Divide(hNumDYbinned[i], hDenDYbinned[i], "n");
-    }
+    cout << "---------------------------------------------------------" << endl;
 
+    hEffData[i]  = new TGraphAsymmErrors(hNumDatabinned[i],  hDenDatabinned[i],  "n");
+    hEffAllMC[i] = new TGraphAsymmErrors(hNumAllMCbinned[i], hDenAllMCbinned[i], "n");
+    hEffDY[i]    = new TGraphAsymmErrors(hNumDYbinned[i],    hDenDYbinned[i],    "n");
 
     hAuxiliar1[i]      = (TH1D*)hDenDYbinned[i]->Clone();
     hAuxiliar2[i]      = (TH1D*)hDenDYbinned[i]->Clone();
@@ -291,15 +285,8 @@ void ComputeEfficiencies () {
 
     hRatioDataAllMC[i]->Divide(hAuxiliarData[i], hAuxiliarAllMC[i]);
 
-    hEffDataFinal[i] = new TGraphAsymmErrors(hDenDYbinned[i]->GetNbinsX());
-
-    /*
-    for (int j = 1; j < hDenDYbinned[i]->GetNbinsX(); j++) {
-      hAuxiliar1[i]->SetBinContent(j, 1);
-      hAuxiliar1[i]->SetBinError(j, 0);
-    }
-    hAuxiliar2[i]->Divide(hAuxiliar1[i], hRatioDataAllMC[i]);
-    */
+    //    hEffDataFinal[i] = new TGraphAsymmErrors(hDenDYbinned[i]->GetNbinsX());
+    hEffDataFinal[i] = new TGraphAsymmErrors(hRatioDataAllMC[i]);
 
     for (int j = 0; j < hDenDYbinned[i]->GetNbinsX(); j++) {
 
@@ -317,16 +304,16 @@ void ComputeEfficiencies () {
       double errAllMCHigh = hEffAllMC[i]->GetErrorYhigh(j);
 
       double errLow       = ((effDY == 0) || (effData == 0)) ? 0 :
-	TMath::Hypot(TMath::Hypot((errDYLow/effDY), (errDataLow/effData)), (errAllMCLow/effAllMC));
+	eff*TMath::Hypot(TMath::Hypot((errDYLow/effDY), (errDataLow/effData)), (errAllMCLow/effAllMC));
       double errHigh      = ((effDY == 0) || (effData == 0)) ?
-	(TMath::Hypot((errDYHigh/effDY), (errDataHigh/effData)) / effAllMC):
-	TMath::Hypot(TMath::Hypot((errDYHigh/effDY), (errDataHigh/effData)), (errAllMCHigh/effAllMC));
+	eff*(TMath::Hypot((errDYHigh/effDY), (errDataHigh/effData)) / effAllMC) :
+	eff*TMath::Hypot(TMath::Hypot((errDYHigh/effDY), (errDataHigh/effData)), (errAllMCHigh/effAllMC));
 
       hEffDataFinal[i]->SetPoint( j, hEffDY[i]->GetX()[j], eff);
 
       hEffDataFinal[i]->SetPointError( j, hEffDY[i]->GetErrorXlow(j), hEffDY[i]->GetErrorXhigh(j), errLow, errHigh );
 
-      cout << "bin = " << j << ", eff = " << eff << " +" << errHigh << " -" << errLow << endl;
+      cout << "........... bin = " << j << ", eff = " << eff << " +" << errHigh << " -" << errLow << endl;
     }
 
     //    hEffDataFinal[i] = new TGraphAsymmErrors(hAuxiliarDY[i], hRatioDataAllMC[i], "n");
@@ -367,9 +354,9 @@ void ComputeEfficiencies () {
     mg->GetYaxis()->SetTitleSize(0.07);
     mg->GetYaxis()->SetLabelSize(0.06);
 
-    int xMin = hDenDYbinned[i]->GetBinLowEdge(1);
-    int xMax = hDenDYbinned[i]->GetBinLowEdge(hDenDYbinned[i]->GetNbinsX() + 1);
-    cout << "----------->>>> xMin = " << xMin << ", xMax = " << xMax << endl;
+    xMin = hDenDYbinned[i]->GetBinLowEdge(1);
+    xMax = hDenDYbinned[i]->GetBinLowEdge(hDenDYbinned[i]->GetNbinsX() + 1);
+
     mg->GetXaxis()->SetRangeUser(xMin, xMax);
 
     TLegend *l = new TLegend(0.18, 0.05, 0.45, 0.5);
@@ -394,9 +381,9 @@ void ComputeEfficiencies () {
 
     for (int j = 0; j < hDenDYbinned[i]->GetNbinsX(); j++) {
       double sf     = hEffData[i]->GetY()[j] / hEffAllMC[i]->GetY()[j];
-      double sfLow  = TMath::Hypot( (hEffData[i]->GetErrorYlow(j)   / hEffData[i]->GetY()[j]),
+      double sfLow  = sf*TMath::Hypot( (hEffData[i]->GetErrorYlow(j)   / hEffData[i]->GetY()[j]),
 				    (hEffAllMC[i]->GetErrorYlow(j)  / hEffAllMC[i]->GetY()[j]) );
-      double sfHigh = TMath::Hypot( (hEffData[i]->GetErrorYhigh(j)  / hEffData[i]->GetY()[j]),
+      double sfHigh = sf*TMath::Hypot( (hEffData[i]->GetErrorYhigh(j)  / hEffData[i]->GetY()[j]),
 				    (hEffAllMC[i]->GetErrorYhigh(j) / hEffAllMC[i]->GetY()[j]) );
 
       hSF[i]->SetPoint( j, hEffDY[i]->GetX()[j], sf );
@@ -439,7 +426,7 @@ void ComputeEfficiencies () {
 
     xMin = hDenDYbinned[i]->GetBinLowEdge(1);
     xMax = hDenDYbinned[i]->GetBinLowEdge(hDenDYbinned[i]->GetNbinsX() + 1);
-    cout << "----------->>>> xMin = " << xMin << ", xMax = " << xMax << endl;
+
     mg2->GetXaxis()->SetRangeUser(xMin, xMax);
 
     TLegend *l2 = new TLegend(0.2, 0.75, 0.55, 0.95);
@@ -451,7 +438,7 @@ void ComputeEfficiencies () {
     l2->Draw();
 
     // Save canvas
-    saveCanvas(canvas[i], "Efficiency_" + variables[i] );  
+    saveCanvas(canvas[i], "Efficiency_" + variables[i] );
   }
 
 }
@@ -564,7 +551,7 @@ void changeBin(TH1D *hNumDY,           TH1D *hDenDY,
     double errorDenData;
     double errorDenAllMC;
 
-    for (int i = 1; i < nBins + 1; i++) {
+    for (int i = 1; i <= nBins; i++) {
       contentNumDY    = 0;
       contentNumData  = 0;
       contentNumAllMC = 0;
@@ -578,11 +565,23 @@ void changeBin(TH1D *hNumDY,           TH1D *hDenDY,
       errorDenData    = 0;
       errorDenAllMC   = 0;
 
-      for (int j = 1; j < hNumDY->GetNbinsX(); j++) {
+      for (int j = 1; j <= hNumDY->GetNbinsX(); j++) {
 
 	double xMin = hNumDY->GetBinLowEdge(j);
 	double xMax = hNumDY->GetBinLowEdge(j+1);
-	if ((xMin < edges[i-1]) || (xMax > edges[i])) continue;
+	/*
+	cout << "-> i = " << i << "\t j = " << j
+	     << "\t xMin = " << xMin << "\t edges[" << i-1 << "] = " << edges[i-1]
+	     << "\t xMax = " << xMax << "\t edges[" << i << "] = " << edges[i];
+	*/
+	if ((xMin < edges[i-1]) || (xMax > edges[i])) {
+	  //	  cout << " <<<---- out " << endl;
+	  continue;
+	}
+	/*
+	else
+	  cout << endl;
+	*/
 
 	contentNumDY    = contentNumDY    + hNumDY->GetBinContent(j);
 	contentDenDY    = contentDenDY    + hDenDY->GetBinContent(j);
@@ -600,7 +599,25 @@ void changeBin(TH1D *hNumDY,           TH1D *hDenDY,
 
       } // End of for (int j = 1; j < hNumDY->GetNbinsX(); j++)
 
-      cout << "..........." << edges[i-1] << "   -->   " << edges[i] << ", effData = " << contentNumData/contentDenData << endl;
+      // In case of denominator is lower than numerator,
+      // denominator becomes equal to numberator.
+      if (contentDenData  < contentNumData) {
+	contentDenData  = contentNumData;
+	errorDenData    = errorNumData;
+      }
+      if (contentDenDY    < contentNumDY) {
+	contentDenDY    = contentNumDY;
+	errorDenDY      = errorNumDY;
+      }
+      if (contentDenAllMC < contentNumAllMC) {
+	contentDenAllMC = contentNumAllMC;
+	errorDenAllMC   = errorNumAllMC;
+      }
+
+      cout << "---------------------------------------------------------" << endl;
+      cout << "........... xMin = " << edges[i-1] << "   -->  xMax = " << edges[i] << ",\t effData  = " << contentNumData/contentDenData << endl;
+      cout << "........... xMin = " << edges[i-1] << "   -->  xMax = " << edges[i] << ",\t effDY    = " << contentNumDY/contentDenDY << endl;
+      cout << "........... xMin = " << edges[i-1] << "   -->  xMax = " << edges[i] << ",\t effAllMC = " << contentNumAllMC/contentDenAllMC << endl;
 
       hNumDYbinned->SetBinContent(i,    contentNumDY);
       hDenDYbinned->SetBinContent(i,    contentDenDY);
@@ -615,8 +632,6 @@ void changeBin(TH1D *hNumDY,           TH1D *hDenDY,
       hDenDatabinned->SetBinError(i,  errorDenData);
       hNumAllMCbinned->SetBinError(i, errorNumAllMC);
       hDenAllMCbinned->SetBinError(i, errorDenAllMC);
-
     } // End of for (int i = 1; i < edges.size() - 1; i++)
-
 }
 
